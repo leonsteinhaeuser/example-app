@@ -1,0 +1,23 @@
+version: "3"
+
+services:
+  number-service:
+    build:
+      context: .
+      dockerfile: ./number-service/Dockerfile
+    networks:
+      - app
+
+  view-service:
+    build:
+      context: .
+      dockerfile: ./view-service/Dockerfile
+    environment:
+      NUMBER_SERVICE_ADDRESS: "http://number-service:1111"
+    networks:
+      - app
+    ports:
+      - "2222:2222"
+
+networks:
+  app:
