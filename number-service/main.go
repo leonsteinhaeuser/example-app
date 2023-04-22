@@ -14,5 +14,9 @@ func main() {
 			Number: rand.Int63(),
 		})
 	})
+	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("ok"))
+	})
 	http.ListenAndServe(":1111", nil)
 }

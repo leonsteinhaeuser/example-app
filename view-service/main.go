@@ -52,6 +52,10 @@ func main() {
 			return
 		}
 	})
+	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("ok"))
+	})
 	http.ListenAndServe(":2222", nil)
 }
 
