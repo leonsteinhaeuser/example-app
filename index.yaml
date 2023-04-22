@@ -1,0 +1,25 @@
+apiVersion: v1
+entries:
+  number-service:
+  - apiVersion: v2
+    appVersion: v1.0.0
+    created: "2023-04-22T19:36:29.261628178Z"
+    description: A Helm chart for Kubernetes
+    digest: f57bb3e35ebbe8103a923e17c6064ff071ce4701fb8bc1820c0c5be366aa1397
+    name: number-service
+    type: application
+    urls:
+    - https://github.com/leonsteinhaeuser/example-app/releases/download/number-service-1.0.0/number-service-1.0.0.tgz
+    version: 1.0.0
+  view-service:
+  - apiVersion: v2
+    appVersion: v1.0.0
+    created: "2023-04-22T19:36:29.446029226Z"
+    description: A Helm chart for Kubernetes
+    digest: 8d0cbeacc391473d8230e3ee119f6f0a58825abcc34f5445b6a62f01d47bb389
+    name: view-service
+    type: application
+    urls:
+    - https://github.com/leonsteinhaeuser/example-app/releases/download/view-service-1.0.0/view-service-1.0.0.tgz
+    version: 1.0.0
+generated: "2023-04-22T19:36:29.446033626Z"
