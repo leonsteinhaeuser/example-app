@@ -21,4 +21,4 @@ jobs:
       - name: Build and Push
         env:
           VERSION: ${{ github.ref_name }}
-        run: make docker-build-and-push
+        run: make build-docker-and-push

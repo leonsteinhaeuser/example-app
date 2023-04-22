@@ -6,9 +6,9 @@ VERSION?=latest
 run:
 	docker-compose up --build
 
-docker-build-and-push: docker-build docker-push
+build-docker-and-push: build-docker push-docker
 
-docker-push:
+push-docker:
 	docker push $(IMG_NUMBER_SERVICE):${VERSION}
 	docker push $(IMG_VIEW_SERVICE):${VERSION}
 
