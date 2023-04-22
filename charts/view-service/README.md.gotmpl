@@ -1,0 +1,25 @@
+{{ template "chart.header" . }}
+
+{{ template "chart.badgesSection" . }}
+
+{{ template "chart.description" . }}
+
+## Installation
+
+### Add Helm repository
+
+```bash
+helm repo add example-app https://leonsteinhaeuser.github.io/example-app
+```
+
+## Maintainers
+
+{{ template "chart.maintainersTable" . }}
+
+## Requirements
+
+{{ template "chart.requirementsTable" . }}
+
+{{ template "chart.valuesSection" . }}
+
+{{ template "helm-docs.versionFooter" . }}
