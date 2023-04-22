@@ -48,6 +48,7 @@ Selector labels
 {{- define "number-service.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "number-service.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
+{{ toYaml .Values.podLabels }}
 {{- end }}
 
 {{/*
