@@ -1,6 +1,24 @@
 version: "3"
 
+# Future: https://gist.github.com/leonsteinhaeuser/745f541517a9cc3bb78b565158e5a42c
+
 services:
+  # dependencies
+  postgres-1:
+    container_name: &pgarthost postgres-1
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: &pgartusr article_service
+      POSTGRES_PASSWORD: &pgartpass article_service
+      POSTGRES_DB: &pgartdb article_service
+      PGDATA: /var/lib/postgresql/data/pgdata
+    networks:
+      - pgsql-1
+    volumes:
+      - postgres-data-1:/var/lib/postgresql/data/pgdata
+
+  # services
   number-service:
     build:
       context: .
@@ -19,5 +37,30 @@ services:
     ports:
       - "2222:2222"
 
+  article-service:
+    build:
+      context: .
+      dockerfile: ./article-service/Dockerfile
+    depends_on:
+      #init-database:
+      #  condition: service_completed_successfully
+      postgres-1:
+        condition: service_started
+    environment:
+      DATABASE_DRIVER: postgres
+      DATABASE_HOST: *pgarthost
+      DATABASE_PORT: "5432"
+      DATABASE_USERNAME: *pgartusr
+      DATABASE_PASSWORD: *pgartpass
+      DATABASE_NAME: *pgartdb
+      DATABASE_OPTIONS: sslmode=disable
+    networks:
+      - app
+      - pgsql-1
+
 networks:
   app:
+  pgsql-1:
+
+volumes:
+  postgres-data-1:
