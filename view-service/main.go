@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/leonsteinhaeuser/example-app/lib"
+	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -56,6 +57,8 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok"))
 	})
+
+	log.Info().Msg("starting view-service with address: 0.0.0.0:2222")
 	http.ListenAndServe(":2222", nil)
 }
 

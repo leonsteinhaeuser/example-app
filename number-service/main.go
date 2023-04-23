@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/leonsteinhaeuser/example-app/lib"
+	"github.com/rs/zerolog/log"
 )
 
 func main() {
@@ -18,5 +19,6 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok"))
 	})
+	log.Info().Msg("starting number-service with address: 0.0.0.0:1111")
 	http.ListenAndServe(":1111", nil)
 }
