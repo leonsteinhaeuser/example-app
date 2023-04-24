@@ -76,6 +76,8 @@ services:
       - app
       - pgsql-1
       - nats-1
+    ports:
+      - "13333:3333"
 
 networks:
   app:
