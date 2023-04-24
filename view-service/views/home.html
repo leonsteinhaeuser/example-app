@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+
+<body>
+    <h1>URLs:</h1>>
+    <ul>
+        {{ range $links := . }}
+        <li><a href='{{ $links }}'>{{ $links }}</a></li>
+        {{ end }}
+    </ul>
+</body>
+</html>

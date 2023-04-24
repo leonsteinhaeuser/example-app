@@ -1,84 +1,35 @@
 package main
 
 import (
-	"context"
-	"encoding/json"
-	"html/template"
 	"net/http"
-	"os"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/leonsteinhaeuser/example-app/lib"
+	"github.com/leonsteinhaeuser/example-app/view-service/views"
 	"github.com/rs/zerolog/log"
 )
 
-var (
-	numberServiceAddress = os.Getenv("NUMBER_SERVICE_ADDRESS")
-
-	stringTemplate = `
-<html>
-	<head>
-		<title>View Service</title>
-	</head>
-	<body>
-		<h1>View Service</h1>
-		<p>Number: {{ .number }}</p>
-	</body>
-</html>
-	`
-
-	indexTemplate = template.New("index.html")
-)
-
-func init() {
-	idxTpl, err := indexTemplate.Parse(stringTemplate)
-	if err != nil {
-		panic("failed to parse index.html template")
-	}
-	indexTemplate = idxTpl
-}
-
 func main() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		number, err := getNumberFromNumberService(r.Context())
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+	mux := chi.NewRouter()
+	mux.Use(middleware.RequestID)
+	mux.Use(middleware.RealIP)
+	mux.Use(middleware.NoCache)
+	mux.Use(middleware.CleanPath)
+	mux.Use(middleware.Logger)
+	mux.Use(middleware.AllowContentType("application/json"))
+	mux.Use(middleware.Recoverer)
+	mux.Get("/healthz", lib.Healthz)
+	views.ArticleRouter(mux)
+	views.NumberRouter(mux)
+	views.HomeRouter(mux)
 
-		err = indexTemplate.Execute(w, map[string]interface{}{
-			"number": number,
-		})
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	})
-	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("ok"))
+	chi.Walk(mux, func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
+		views.EndpointList = append(views.EndpointList, route)
+		log.Debug().Str("method", method).Str("route", route).Msg("registered route")
+		return nil
 	})
 
 	log.Info().Msg("starting view-service with address: 0.0.0.0:2222")
-	http.ListenAndServe(":2222", nil)
-}
-
-func getNumberFromNumberService(ctx context.Context) (int64, error) {
-	req, err := http.NewRequest("GET", numberServiceAddress, nil)
-	if err != nil {
-		return 0, err
-	}
-	// add context to request
-	req = req.WithContext(ctx)
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return 0, err
-	}
-	// parse response
-	data := lib.NumberResponse{}
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return 0, err
-	}
-	return data.Number, nil
+	http.ListenAndServe(":2222", mux)
 }
