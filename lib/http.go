@@ -6,6 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/leonsteinhaeuser/example-app/lib/log"
 )
 
 var (
@@ -51,15 +54,52 @@ type Client[T any] interface {
 type HttpError struct {
 	Status  int
 	Message string
-	Err     string
-	Value   any
+	Reason  string
 }
 
 func (h *HttpError) Error() string {
-	return fmt.Sprintf("%d %s %q %v", h.Status, h.Message, h.Err, h.Value)
+	return fmt.Sprintf("%d %s %q", h.Status, h.Message, h.Reason)
 }
 
 func Healthz(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("ok"))
+}
+
+// Router is an interface that can be implemented by a struct to register
+// a set of routes with a chi router.
+type Router interface {
+	Router(chi.Router)
+}
+
+func GetStringParam(r *http.Request, param string) string {
+	return chi.URLParam(r, param)
+}
+
+func WriteJSON(w http.ResponseWriter, statusCode int, data interface{}) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	return json.NewEncoder(w).Encode(data)
+}
+
+func WriteError(w http.ResponseWriter, statusCode int, msg string, err error) error {
+	return WriteJSON(w, statusCode, HttpError{
+		Status:  statusCode,
+		Message: msg,
+		Reason:  err.Error(),
+	})
+}
+
+func ReadJSON(r *http.Request, data interface{}) error {
+	return json.NewDecoder(r.Body).Decode(data)
+}
+
+func WalkRoutes(r chi.Router, log log.Logger) {
+	chi.Walk(r, func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
+		log.Debug().
+			Field("method", method).
+			Field("route", route).
+			Log("registered route")
+		return nil
+	})
 }
