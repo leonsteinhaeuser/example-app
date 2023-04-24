@@ -1,18 +1,18 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
+	"context"
 	"net/http"
 	"os"
-
-	"github.com/rs/zerolog/log"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/leonsteinhaeuser/example-app/article-service/accessobjects"
+	"github.com/leonsteinhaeuser/example-app/article-service/api"
 	"github.com/leonsteinhaeuser/example-app/lib"
+	"github.com/leonsteinhaeuser/example-app/lib/db"
+	"github.com/leonsteinhaeuser/example-app/lib/log"
 )
 
 var (
@@ -24,57 +24,43 @@ var (
 	dbName     = os.Getenv("DATABASE_NAME")
 	dbOptions  = os.Getenv("DATABASE_OPTIONS")
 
-	gormDB *gorm.DB
+	accessor db.Repository
+
+	clog log.Logger = log.NewZerlog()
+
+	pl lib.ProcessLifecycle = lib.NewProcessLifecycle([]os.Signal{os.Interrupt, os.Kill})
 )
 
 func init() {
-	log.Info().Msg("initializing database")
+	acsr, err := db.NewGormRepository(db.Config{
+		Driver: dbDriver,
 
-	var dialector gorm.Dialector
-	switch dbDriver {
-	case "postgres", "postgresql":
-		dsn := fmt.Sprintf("postgres://%s@%s:%s/%s?password=%s", dbUsername, dbHost, dbPort, dbName, dbPassword)
-		if dbOptions != "" {
-			dsn += "&" + dbOptions
-		}
-		dialector = postgres.Open(dsn)
-	default:
-		log.Fatal().Msgf("unsupported database driver: %q", dbDriver)
-	}
-
-	log.Info().Msg("connecting to database...")
-	db, err := gorm.Open(dialector)
+		Postgres: db.PostgresConfig{
+			Host:     dbHost,
+			Port:     dbPort,
+			Password: dbPassword,
+			Database: dbName,
+			Username: dbUsername,
+			Options:  dbOptions,
+		},
+		MaxIdleConns: 10,
+		MaxOpenConns: 100,
+	})
 	if err != nil {
-		log.Fatal().Err(err).Msg("unable to connect to database")
+		clog.Panic(err).Log("failed to initialize database accessor")
+		return
 	}
-	gormDB = db
-
-	err = gormDB.Raw(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`).Error
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to enable uuid-ossp extension")
-	}
-
-	log.Info().Msg("migrating database tables...")
-	err = gormDB.AutoMigrate(lib.Article{})
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to migrate database table")
-	}
+	accessor = acsr
 }
 
 func main() {
+	ctx, cf := context.WithTimeout(context.Background(), 30*time.Second)
 	// on shutdown close database
-	defer func() {
-		db, err := gormDB.DB()
-		if err != nil {
-			log.Error().Err(err).Msg("unable to close database")
-			return
-		}
-		db.Close()
-	}()
+	defer cf()
+	pl.RegisterShutdownProcess(accessor.Close)
 
-	log.Info().Msg("creating and initializing http router")
+	clog.Info().Log("creating and initializing http router")
 	mux := chi.NewRouter()
-
 	// initialize middlewares
 	mux.Use(middleware.RequestID)
 	mux.Use(middleware.RealIP)
@@ -84,165 +70,27 @@ func main() {
 	mux.Use(middleware.AllowContentType("application/json"))
 	mux.Use(middleware.Recoverer)
 
-	log.Info().Msg("defining http routes")
-	mux.Route("/article", func(r chi.Router) {
-		r.Route("/{id}", func(r chi.Router) {
-			r.Get("/", getByID)
-			r.Put("/", updateByID)
-			r.Delete("/", deleteByID)
-		})
-		r.Get("/", list)
-		r.Post("/", create)
-	})
-
-	chi.Walk(mux, func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
-		log.Debug().Str("method", method).Str("route", route).Msg("registered route")
-		return nil
-	})
-
-	log.Info().Msg("starting article-service with address: 0.0.0.0:3333")
-	err := http.ListenAndServe(":3333", mux)
+	artc := accessobjects.NewArticle(accessor, clog)
+	err := artc.Migrate(ctx)
 	if err != nil {
-		log.Fatal().Err(err).Msg("something went wrong with the server")
-	}
-}
-
-func getURLID(r *http.Request) string {
-	return chi.URLParam(r, "id")
-}
-
-func getByID(w http.ResponseWriter, r *http.Request) {
-	// ctx := r.Context()
-	id := getURLID(r)
-
-	log.Debug().Msg("requesting article by ID from database")
-	article := &lib.Article{}
-	err := gormDB.Model(article).First(article, "id = ?", id).Error
-	if err != nil {
-		log.Error().Err(err).Msg("failed to article by id")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		clog.Panic(err).Log("failed to migrate article table")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	clog.Info().Log("defining http routes")
+	api.NewArticleRouter(*artc, clog).Router(mux)
 
-	log.Debug().Msg("parsing article to json")
-	err = json.NewEncoder(w).Encode(article)
-	if err != nil {
-		log.Error().Err(err).Msgf("failed to encode article with id %q", article.ID)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-}
+	// log routes
+	lib.WalkRoutes(mux, clog)
 
-func list(w http.ResponseWriter, r *http.Request) {
-	articles := &[]lib.Article{}
+	clog.Info().Log("starting article-service with address: 0.0.0.0:3333")
+	go func() {
+		err = http.ListenAndServe(":3333", mux)
+		if err != nil {
+			clog.Panic(err).Log("something went wrong with the server")
+		}
+	}()
 
-	log.Debug().Msg("querying database for all articles")
-	err := gormDB.Model(articles).Find(articles).Error
-	if err != nil {
-		log.Error().Err(err).Msg("failed to get all articles from database")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	log.Debug().Msg("parsing list of articles to json")
-	err = json.NewEncoder(w).Encode(articles)
-	if err != nil {
-		log.Error().Err(err).Msg("failed to encode list of articles")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-}
-
-func updateByID(w http.ResponseWriter, r *http.Request) {
-	id := getURLID(r)
-
-	log.Debug().Msg("parsing request from json to article")
-	article := lib.Article{}
-	err := json.NewDecoder(r.Body).Decode(&article)
-	if err != nil {
-		log.Error().Err(err).Msg("failed to decode request body")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	if article.ID.String() != id {
-		http.Error(w, "request and URL id mismatch", http.StatusBadRequest)
-		return
-	}
-
-	log.Debug().Msg("updating article in database")
-	err = gormDB.Model(article).Save(article).Error
-	if err != nil {
-		log.Error().Err(err).Msg("failed to update article in database")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-}
-
-func deleteByID(w http.ResponseWriter, r *http.Request) {
-	id := getURLID(r)
-
-	log.Debug().Msg("unparsing request body to article")
-	article := &lib.Article{}
-	err := json.NewDecoder(r.Body).Decode(article)
-	if err != nil {
-		log.Error().Err(err).Msg("failed to decode request body")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	if article.ID.String() != id {
-		http.Error(w, "request body and URL id mismatch", http.StatusBadRequest)
-		return
-	}
-
-	log.Debug().Msg("deleting article from database")
-	err = gormDB.Model(article).Delete(article).Error
-	if err != nil {
-		log.Error().Err(err).Msg("failed to delete article form database")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-}
-
-func create(w http.ResponseWriter, r *http.Request) {
-	log.Debug().Msg("unparsing request body to article")
-	article := &lib.Article{}
-	err := json.NewDecoder(r.Body).Decode(article)
-	if err != nil {
-		log.Error().Err(err).Msg("failed to decode request body")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	log.Debug().Msg("creating article in database")
-	err = gormDB.Model(article).Create(article).Error
-	if err != nil {
-		log.Error().Err(err).Msg("failed to create article in database")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-
-	log.Debug().Msg("encoding created article to json")
-	err = json.NewEncoder(w).Encode(article)
-	if err != nil {
-		log.Error().Err(err).Msg("failed to encode article")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	pl.Wait()
+	pl.Shutdown(ctx)
 }
