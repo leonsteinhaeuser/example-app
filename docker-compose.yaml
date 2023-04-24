@@ -18,6 +18,19 @@ services:
     volumes:
       - postgres-data-1:/var/lib/postgresql/data/pgdata
 
+  nats:
+    image: nats:2.9.16-alpine
+    #ports:
+    #  - "4222:4222"
+    #  - "8222:8222"
+    #  - "6222:6222"
+    command:
+      - --user=nats
+      - --pass=nats
+      - --server_name=nats
+    networks:
+      - nats-1
+
   # services
   number-service:
     build:
@@ -32,6 +45,7 @@ services:
       dockerfile: ./view-service/Dockerfile
     environment:
       NUMBER_SERVICE_ADDRESS: "http://number-service:1111"
+      ARTICLE_SERVICE_URL: "http://article-service:3333"
     networks:
       - app
     ports:
@@ -57,10 +71,12 @@ services:
     networks:
       - app
       - pgsql-1
+      - nats-1
 
 networks:
   app:
   pgsql-1:
+  nats-1:
 
 volumes:
   postgres-data-1:
