@@ -55,7 +55,6 @@ func init() {
 
 func main() {
 	ctx, cf := context.WithTimeout(context.Background(), 30*time.Second)
-	// on shutdown close database
 	defer cf()
 	pl.RegisterShutdownProcess(accessor.Close)
 
