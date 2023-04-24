@@ -1,16 +1,28 @@
 package main
 
 import (
+	"context"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/leonsteinhaeuser/example-app/lib"
+	"github.com/leonsteinhaeuser/example-app/lib/log"
 	"github.com/leonsteinhaeuser/example-app/view-service/views"
-	"github.com/rs/zerolog/log"
+)
+
+var (
+	clog log.Logger = log.NewZerlog()
+
+	pl lib.ProcessLifecycle = lib.NewProcessLifecycle([]os.Signal{os.Interrupt, os.Kill})
 )
 
 func main() {
+	ctx, cf := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cf()
+
 	mux := chi.NewRouter()
 	mux.Use(middleware.RequestID)
 	mux.Use(middleware.RealIP)
@@ -24,12 +36,15 @@ func main() {
 	views.NumberRouter(mux)
 	views.HomeRouter(mux)
 
-	chi.Walk(mux, func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
-		views.EndpointList = append(views.EndpointList, route)
-		log.Debug().Str("method", method).Str("route", route).Msg("registered route")
-		return nil
-	})
+	lib.WalkRoutes(mux, clog)
 
-	log.Info().Msg("starting view-service with address: 0.0.0.0:2222")
-	http.ListenAndServe(":2222", mux)
+	go func() {
+		err := http.ListenAndServe(":2222", mux)
+		if err != nil {
+			clog.Panic(err).Log("something went wrong with the server")
+		}
+	}()
+
+	pl.Wait()
+	pl.Shutdown(ctx)
 }
