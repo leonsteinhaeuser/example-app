@@ -18,8 +18,9 @@ services:
     volumes:
       - postgres-data-1:/var/lib/postgresql/data/pgdata
 
-  nats:
+  nats-1:
     image: nats:2.9.16-alpine
+    container_name: nats-1
     #ports:
     #  - "4222:4222"
     #  - "8222:8222"
@@ -33,6 +34,7 @@ services:
 
   # services
   number-service:
+    container_name: name-service
     build:
       context: .
       dockerfile: ./number-service/Dockerfile
@@ -40,6 +42,7 @@ services:
       - app
 
   view-service:
+    container_name: view-service
     build:
       context: .
       dockerfile: ./view-service/Dockerfile
@@ -52,6 +55,7 @@ services:
       - "2222:2222"
 
   article-service:
+    container_name: article-service
     build:
       context: .
       dockerfile: ./article-service/Dockerfile
