@@ -95,6 +95,11 @@ func main() {
 		r.Post("/", create)
 	})
 
+	chi.Walk(mux, func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
+		log.Debug().Str("method", method).Str("route", route).Msg("registered route")
+		return nil
+	})
+
 	log.Info().Msg("starting article-service with address: 0.0.0.0:3333")
 	err := http.ListenAndServe(":3333", mux)
 	if err != nil {
