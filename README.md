@@ -6,5 +6,5 @@ A simple microservice app
 graph TD
   A[Client] --> B[View Service]
   B --> C[Number Service]
-  B --> C[Article Service]
+  B --> D[Article Service]
 ```
