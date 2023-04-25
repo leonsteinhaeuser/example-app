@@ -1,29 +1,40 @@
 package main
 
 import (
-	"encoding/json"
-	"math/rand"
+	"context"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/leonsteinhaeuser/example-app/lib"
-	"github.com/rs/zerolog/log"
+	"github.com/leonsteinhaeuser/example-app/lib/log"
+	"github.com/leonsteinhaeuser/example-app/number-service/api"
+)
+
+var (
+	logr log.Logger           = log.NewZerlog()
+	pl   lib.ProcessLifecycle = lib.NewProcessLifecycle([]os.Signal{os.Interrupt, os.Kill})
 )
 
 func main() {
+	ctx, cf := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cf()
+
 	mux := chi.NewRouter()
-	mux.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(lib.NumberResponse{
-			Number: rand.Int63(),
-		})
-	})
+	mux.Use(log.LoggerMiddleware(logr))
 	mux.Get("/healthz", lib.Healthz)
+	api.NewNumberRouter(logr).Router(mux)
+	lib.WalkRoutes(mux, logr)
 
-	chi.Walk(mux, func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
-		log.Debug().Str("method", method).Str("route", route).Msg("registered route")
-		return nil
-	})
+	logr.Info().Log("starting number-service with address: 0.0.0.0:1111")
+	go func() {
+		err := http.ListenAndServe(":1111", mux)
+		if err != nil {
+			logr.Panic(err).Log("something went wrong with the server")
+		}
+	}()
 
-	log.Info().Msg("starting number-service with address: 0.0.0.0:1111")
-	http.ListenAndServe(":1111", mux)
+	pl.Wait()
+	pl.Shutdown(ctx)
 }

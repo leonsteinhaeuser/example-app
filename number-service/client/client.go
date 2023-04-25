@@ -27,6 +27,7 @@ type numberClient struct {
 // serviceURL should be in the format of http://host:port
 func NewNumberClient(serviceURL string) lib.Client[lib.NumberResponse] {
 	return &numberClient{
+		serviceURL: serviceURL,
 		client: http.Client{
 			Timeout: 5 * time.Second,
 		},
