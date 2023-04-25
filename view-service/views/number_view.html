@@ -4,14 +4,12 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="/main.css">
+    <title>View Service</title>
 </head>
 
 <body>
-    <h1>URLs:</h1>>
-    <ul>
-        {{ range $links := . }}
-        <li><a href='{{ $links }}'>{{ $links }}</a></li>
-        {{ end }}
-    </ul>
+    <h1>View Service</h1>
+    <p>Number: {{ .number }}</p>
 </body>
+
 </html>

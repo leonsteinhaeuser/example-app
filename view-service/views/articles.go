@@ -4,12 +4,10 @@ import (
 	_ "embed"
 	"html/template"
 	"net/http"
-	"os"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/leonsteinhaeuser/example-app/article-service/client"
 	"github.com/leonsteinhaeuser/example-app/lib"
-	"github.com/rs/zerolog/log"
+	"github.com/leonsteinhaeuser/example-app/lib/log"
 )
 
 var (
@@ -17,65 +15,76 @@ var (
 	templateListArticles string
 	//go:embed get_article.html
 	templateGetArticle string
+)
 
-	// rendered templates
+type articleRouter struct {
+	log log.Logger
+
 	listArticlesTemplate *template.Template
 	getArticlesTemplate  *template.Template
 
-	articleServiceClient lib.Client[lib.Article] = client.NewArticleClient(os.Getenv("ARTICLE_SERVICE_URL"))
-)
-
-func init() {
-	// template for list articles
-	t, err := template.New("list_article.html").Parse(templateListArticles)
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to parse list_article.gohtml template")
-	}
-	listArticlesTemplate = t
-	// template for get article
-	t, err = template.New("get_article.html").Parse(templateGetArticle)
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to parse list_article.gohtml template")
-	}
-	getArticlesTemplate = t
+	client lib.Client[lib.Article]
 }
 
-func ArticleRouter(rt chi.Router) {
-	rt.Route("/article", func(r chi.Router) {
-		r.Get("/list", listArticlesEndpoint)
-		r.Get("/{id}", getArticleByIDEndpoint)
+func NewArticleRouter(log log.Logger, articleClient lib.Client[lib.Article]) lib.Router {
+	// template for list articles
+	listArticleTemplate, err := template.New("list_article.html").Parse(templateListArticles)
+	if err != nil {
+		log.Panic(err).Log("failed to parse list_article.html template")
+	}
+	// template for get article
+	getArticlesTemplate, err := template.New("get_article.html").Parse(templateGetArticle)
+	if err != nil {
+		log.Panic(err).Log("failed to parse list_article.html template")
+	}
+	return &articleRouter{
+		listArticlesTemplate: listArticleTemplate,
+		getArticlesTemplate:  getArticlesTemplate,
+		log:                  log,
+		client:               articleClient,
+	}
+}
+
+func (a *articleRouter) Router(r chi.Router) {
+	r.Route("/article", func(r chi.Router) {
+		r.Get("/list", a.listArticlesEndpoint)
+		r.Get("/{id}", a.getArticleByIDEndpoint)
 	})
 }
 
-func listArticlesEndpoint(w http.ResponseWriter, r *http.Request) {
+func (a *articleRouter) listArticlesEndpoint(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	articles, err := articleServiceClient.List(ctx)
+	articles, err := a.client.List(ctx)
 	if err != nil {
+		a.log.Error(err).Log("failed to get articles")
+		lib.WriteError(w, http.StatusInternalServerError, "failed to get articles", err)
 		return
 	}
 
-	log.Info().Any("articles", articles).Msg("articles")
-	err = listArticlesTemplate.Execute(w, articles)
+	err = a.listArticlesTemplate.Execute(w, articles)
 	if err != nil {
-		log.Error().Err(err).Msg("failed to render template")
-		http.Error(w, "failed to render template", http.StatusInternalServerError)
+		a.log.Error(err).Log("failed to render template")
+		lib.WriteError(w, http.StatusInternalServerError, "failed to render template", err)
 		return
 	}
 }
 
-func getArticleByIDEndpoint(w http.ResponseWriter, r *http.Request) {
+func (a *articleRouter) getArticleByIDEndpoint(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	id := lib.GetStringParam(r, "id")
 
-	articles, err := articleServiceClient.List(ctx)
+	article, err := a.client.GetByID(ctx, id)
 	if err != nil {
+		a.log.Error(err).Log("failed to get articles")
+		lib.WriteError(w, http.StatusInternalServerError, "failed to get articles", err)
 		return
 	}
 
-	err = getArticlesTemplate.Execute(w, articles)
+	err = a.getArticlesTemplate.Execute(w, article)
 	if err != nil {
-		log.Error().Err(err).Msg("failed to render template")
-		http.Error(w, "failed to render template", http.StatusInternalServerError)
+		a.log.Error(err).Log("failed to render template")
+		lib.WriteError(w, http.StatusInternalServerError, "failed to render template", err)
 		return
 	}
 }

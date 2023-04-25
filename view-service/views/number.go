@@ -1,69 +1,52 @@
 package views
 
 import (
-	"context"
-	"encoding/json"
 	"html/template"
 	"net/http"
-	"os"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/leonsteinhaeuser/example-app/lib"
+	"github.com/leonsteinhaeuser/example-app/lib/log"
+
+	_ "embed"
 )
 
 var (
-	numberServiceAddress = os.Getenv("NUMBER_SERVICE_ADDRESS")
+	//go:embed number_view.html
+	numberViewTemplate string
 
-	stringTemplate = `
-	<html>
-		<head>
-			<title>View Service</title>
-		</head>
-		<body>
-			<h1>View Service</h1>
-			<p>Number: {{ .number }}</p>
-		</body>
-	</html>
-		`
 	indexTemplate = template.New("index.html")
 )
 
-func init() {
-	idxTpl, err := indexTemplate.Parse(stringTemplate)
-	if err != nil {
-		panic("failed to parse index.html template")
-	}
-	indexTemplate = idxTpl
+type numberRouter struct {
+	log log.Logger
+
+	client        lib.Client[lib.NumberResponse]
+	indexTemplate *template.Template
 }
 
-func NumberRouter(rt chi.Router) {
-	rt.Get("/number", numberEndpoint)
+func NewNumberRouter(log log.Logger, client lib.Client[lib.NumberResponse]) lib.Router {
+	numberTemplate, err := indexTemplate.Parse(numberViewTemplate)
+	if err != nil {
+		log.Panic(err).Log("failed to parse number_view.html template")
+	}
+
+	return &numberRouter{
+		indexTemplate: numberTemplate,
+		client:        client,
+		log:           log,
+	}
 }
 
-func getNumberFromNumberService(ctx context.Context) (int64, error) {
-	req, err := http.NewRequest("GET", numberServiceAddress, nil)
-	if err != nil {
-		return 0, err
-	}
-	// add context to request
-	req = req.WithContext(ctx)
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return 0, err
-	}
-	// parse response
-	data := lib.NumberResponse{}
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return 0, err
-	}
-	return data.Number, nil
+func (n *numberRouter) Router(r chi.Router) {
+	r.Get("/number", n.numberEndpoint)
 }
 
-func numberEndpoint(w http.ResponseWriter, r *http.Request) {
-	number, err := getNumberFromNumberService(r.Context())
+func (n *numberRouter) numberEndpoint(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	number, err := n.client.GetByID(ctx, "")
 	if err != nil {
+		n.log.Error(err).Log("failed to get number")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

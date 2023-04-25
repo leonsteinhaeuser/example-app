@@ -7,7 +7,7 @@ import (
 	"github.com/Masterminds/sprig/v3"
 	"github.com/go-chi/chi/v5"
 	"github.com/leonsteinhaeuser/example-app/lib"
-	"github.com/rs/zerolog/log"
+	"github.com/leonsteinhaeuser/example-app/lib/log"
 
 	_ "embed"
 )
@@ -15,46 +15,55 @@ import (
 var (
 	//go:embed home.html
 	templateHome string
-
-	// rendered templates
-	homeTemplate *template.Template
-
-	EndpointList []string
+	//go:embed main.css
+	mainCSS []byte
 )
 
-func init() {
+type homeRouter struct {
+	log log.Logger
+
+	endpoints    *[]string
+	homeTemplate *template.Template
+}
+
+func NewHomeRouter(log log.Logger, endpoints *[]string) lib.Router {
+	log.Info().Field("endpoints", *endpoints).Log("creating home router")
+
 	// template for list articles
-	t, err := template.New("home.html").Funcs(sprig.FuncMap()).Parse(templateHome)
+	homeTemplate, err := template.New("home.html").Funcs(sprig.FuncMap()).Parse(templateHome)
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed to parse home.html template")
+		log.Panic(err).Log("failed to parse home.html template")
 	}
-	homeTemplate = t
-}
 
-func init() {
-	idxTpl, err := indexTemplate.Parse(stringTemplate)
-	if err != nil {
-		panic("failed to parse index.html template")
+	return &homeRouter{
+		log:          log,
+		endpoints:    endpoints,
+		homeTemplate: homeTemplate,
 	}
-	indexTemplate = idxTpl
 }
 
-func HomeRouter(rt chi.Router) {
-	rt.Get("/", homeEndpoint)
+func (h *homeRouter) Router(r chi.Router) {
+	r.Get("/", h.homeEndpoint)
+	r.Get("/main.css", h.cssEndpoint)
 }
 
-func homeEndpoint(w http.ResponseWriter, r *http.Request) {
-	endpointList := make([]string, len(EndpointList))
-	copy(endpointList, EndpointList)
+func (h *homeRouter) homeEndpoint(w http.ResponseWriter, r *http.Request) {
+	endpointList := make([]string, len(*h.endpoints))
+	copy(endpointList, *h.endpoints)
 
-	for idx, endpoint := range EndpointList {
+	for idx, endpoint := range *h.endpoints {
 		endpointList[idx] = lib.URLSchemeOrDefault(r.URL, "http") + "://" + r.Host + endpoint
 	}
 
-	err := homeTemplate.Execute(w, endpointList)
+	err := h.homeTemplate.Execute(w, endpointList)
 	if err != nil {
-		log.Error().Err(err).Msg("failed to render template")
+		h.log.Error(err).Log("failed to render template")
 		http.Error(w, "failed to render template", http.StatusInternalServerError)
 		return
 	}
+}
+
+func (h *homeRouter) cssEndpoint(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/css; charset=utf-8")
+	w.Write(mainCSS)
 }
