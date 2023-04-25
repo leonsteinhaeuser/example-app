@@ -65,7 +65,7 @@ func main() {
 	mux.Use(middleware.RealIP)
 	mux.Use(middleware.NoCache)
 	mux.Use(middleware.CleanPath)
-	mux.Use(middleware.Logger)
+	mux.Use(log.LoggerMiddleware(clog))
 	mux.Use(middleware.AllowContentType("application/json"))
 	mux.Use(middleware.Recoverer)
 

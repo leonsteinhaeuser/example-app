@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/leonsteinhaeuser/example-app/lib"
+	"github.com/leonsteinhaeuser/example-app/lib/log"
 )
 
 type ClientError struct {
@@ -28,6 +29,7 @@ var (
 )
 
 type articleClient struct {
+	log        log.Logger
 	serviceURL string
 	client     http.Client
 }
@@ -35,8 +37,11 @@ type articleClient struct {
 // NewArticleClient returns a new ArticleClient
 // The client configures an http.Client with a 5 second timeout
 // serviceURL should be in the format of http://host:port
-func NewArticleClient(serviceURL string) lib.Client[lib.Article] {
+func NewArticleClient(log log.Logger, serviceURL string) lib.Client[lib.Article] {
+	log.Info().Logf("creating article client for %s", serviceURL)
 	return &articleClient{
+		log:        log,
+		serviceURL: serviceURL,
 		client: http.Client{
 			Timeout: 5 * time.Second,
 		},
@@ -44,7 +49,7 @@ func NewArticleClient(serviceURL string) lib.Client[lib.Article] {
 }
 
 func (c *articleClient) basePath(optionals ...string) (string, error) {
-	paths := append([]string{"articles"}, optionals...)
+	paths := append([]string{"article"}, optionals...)
 	path, err := url.JoinPath(c.serviceURL, paths...)
 	if err != nil {
 		return "", err
