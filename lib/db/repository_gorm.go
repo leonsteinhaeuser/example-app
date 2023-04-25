@@ -106,7 +106,7 @@ func (p *gormRepository) Find(ctx context.Context, data any, selectors ...Select
 		fmt.Println("selector", selector)
 		tx = tx.Where(selector.Field+" = ?", selector.Value)
 	}
-	return tx.First(data).Error
+	return tx.Find(data).Error
 }
 
 func (p *gormRepository) Update(ctx context.Context, data any, selectors ...Selector) error {
