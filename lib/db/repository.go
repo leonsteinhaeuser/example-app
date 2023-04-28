@@ -25,6 +25,7 @@ type Repository interface {
 	Find(ctx context.Context, data any, selectors ...Selector) error
 	Update(ctx context.Context, data any, selectors ...Selector) error
 	Delete(ctx context.Context, data any, selectors ...Selector) error
+	Raw(ctx context.Context, query string, args ...any) error
 	Migrate(ctx context.Context, model any) error
 	Close(context.Context) error
 }

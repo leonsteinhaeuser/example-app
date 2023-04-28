@@ -136,3 +136,7 @@ func (p *gormRepository) Close(context.Context) error {
 	}
 	return sqlDB.Close()
 }
+
+func (p *gormRepository) Raw(ctx context.Context, query string, args ...any) error {
+	return p.DB.Raw(query, args).Error
+}
