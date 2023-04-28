@@ -51,6 +51,16 @@ func init() {
 		return
 	}
 	accessor = acsr
+
+	// add extensions
+	if dbDriver == "postgres" {
+		ctx := context.Background()
+		err := acsr.Raw(ctx, `CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`)
+		if err != nil {
+			clog.Panic(err).Log("failed to enable uuid-ossp extension")
+			return
+		}
+	}
 }
 
 func main() {
