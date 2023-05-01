@@ -1,0 +1,4 @@
+CREATE DATABASE IF NOT EXISTS `user_service`;
+CREATE USER "user_service" WITH LOGIN ENCRYPTED PASSWORD 'user_service';
+GRANT ALL PRIVILEGES ON DATABASE "user_service" TO "user_service";
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
