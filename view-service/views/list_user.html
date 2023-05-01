@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/main.css">
+</head>
+
+<body>
+    <h1>User List:</h1>>
+    <div class="row">
+        {{ range $user := . }}
+        <div class="column">
+            <div class="card">
+                {{- if $user.DisplayName }}
+                <h3><b>Display name: {{ $user.DisplayName }}</b></h3>
+                {{- else }}
+                <h3><b>Username: {{ $user.Username }}</b></h3>
+                {{- end }}
+                <p>ID: {{ $user.ID }}</p>
+                <p>Email: {{ $user.Email }}</p>
+                <p>Is Confirmed: {{ $user.IsConfirmed }}</p>
+                <p>First name: {{ $user.FistName }}</p>
+                <p>Last name: {{ $user.LastName }}</p>
+            </div>
+        </div>
+        {{ end }}
+    </div>
+</body>
+</html>

@@ -12,6 +12,7 @@ import (
 	"github.com/leonsteinhaeuser/example-app/lib"
 	"github.com/leonsteinhaeuser/example-app/lib/log"
 	numberClient "github.com/leonsteinhaeuser/example-app/number-service/client"
+	userClient "github.com/leonsteinhaeuser/example-app/user-service/client"
 	"github.com/leonsteinhaeuser/example-app/view-service/views"
 )
 
@@ -20,6 +21,7 @@ var (
 
 	articleServiceURL    = os.Getenv("ARTICLE_SERVICE_URL")
 	numberServiceAddress = os.Getenv("NUMBER_SERVICE_ADDRESS")
+	userServiceURL       = os.Getenv("USER_SERVICE_URL")
 
 	pl lib.ProcessLifecycle = lib.NewProcessLifecycle([]os.Signal{os.Interrupt, os.Kill})
 )
@@ -40,6 +42,7 @@ func main() {
 
 	views.NewArticleRouter(clog, client.NewArticleClient(clog, articleServiceURL)).Router(mux)
 	views.NewNumberRouter(clog, numberClient.NewNumberClient(numberServiceAddress)).Router(mux)
+	views.NewUserRouter(clog, userClient.NewUserClient(clog, userServiceURL)).Router(mux)
 
 	routes := &[]string{}
 	views.NewHomeRouter(clog, routes).Router(mux)
