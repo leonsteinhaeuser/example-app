@@ -17,6 +17,19 @@ services:
       - pgsql-1
     volumes:
       - postgres-data-1:/var/lib/postgresql/data/pgdata
+  postgres-2:
+    container_name: &pg_host2 postgres-2
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: &pg_user2 user_service
+      POSTGRES_PASSWORD: &pg_pass2 user_service
+      POSTGRES_DB: &pg_db2 user_service
+      PGDATA: /var/lib/postgresql/data/pgdata
+    networks:
+      - pgsql-2
+    volumes:
+      - postgres-data-2:/var/lib/postgresql/data/pgdata
 
   nats-1:
     image: nats:2.9.16-alpine
@@ -79,10 +92,35 @@ services:
     ports:
       - "13333:3333"
 
+  user-service:
+    container_name: user-service
+    build:
+      context: .
+      dockerfile: ./user-service/Dockerfile
+    depends_on:
+      postgres-2:
+        condition: service_started
+    environment:
+      DATABASE_DRIVER: postgres
+      DATABASE_HOST: *pg_host2
+      DATABASE_PORT: "5432"
+      DATABASE_USERNAME: *pg_user2
+      DATABASE_PASSWORD: *pg_pass2
+      DATABASE_NAME: *pg_db2
+      DATABASE_OPTIONS: sslmode=disable
+    networks:
+      - app
+      - pgsql-2
+      - nats-1
+    #ports:
+    #  - "4444:4444"
+
 networks:
   app:
   pgsql-1:
+  pgsql-2:
   nats-1:
 
 volumes:
   postgres-data-1:
+  postgres-data-2:
