@@ -5,13 +5,13 @@ version: "3"
 services:
   # dependencies
   postgres-1:
-    container_name: &pgarthost postgres-1
+    container_name: &pg_host postgres-1
     image: postgres:15-alpine
     restart: always
     environment:
-      POSTGRES_USER: &pgartusr article_service
-      POSTGRES_PASSWORD: &pgartpass article_service
-      POSTGRES_DB: &pgartdb article_service
+      POSTGRES_USER: &pg_user article_service
+      POSTGRES_PASSWORD: &pg_pass article_service
+      POSTGRES_DB: &pg_db article_service
       PGDATA: /var/lib/postgresql/data/pgdata
     networks:
       - pgsql-1
@@ -79,11 +79,11 @@ services:
         condition: service_started
     environment:
       DATABASE_DRIVER: postgres
-      DATABASE_HOST: *pgarthost
+      DATABASE_HOST: *pg_host
       DATABASE_PORT: "5432"
-      DATABASE_USERNAME: *pgartusr
-      DATABASE_PASSWORD: *pgartpass
-      DATABASE_NAME: *pgartdb
+      DATABASE_USERNAME: *pg_user
+      DATABASE_PASSWORD: *pg_pass
+      DATABASE_NAME: *pg_db
       DATABASE_OPTIONS: sslmode=disable
     networks:
       - app
