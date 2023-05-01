@@ -94,6 +94,7 @@ services:
     environment:
       NUMBER_SERVICE_ADDRESS: "http://number-service:1111"
       ARTICLE_SERVICE_URL: "http://article-service:3333"
+      USER_SERVICE_URL: "http://user-service:4444"
     networks:
       - app
     ports:
