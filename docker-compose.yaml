@@ -30,6 +30,19 @@ services:
       - pgsql-2
     volumes:
       - postgres-data-2:/var/lib/postgresql/data/pgdata
+  postgres-3:
+    container_name: &pg_host3 postgres-3
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: &pg_user3 keyword_service
+      POSTGRES_PASSWORD: &pg_pass3 keyword_service
+      POSTGRES_DB: &pg_db3 keyword_service
+      PGDATA: /var/lib/postgresql/data/pgdata
+    networks:
+      - pgsql-3
+    volumes:
+      - postgres-data-3:/var/lib/postgresql/data/pgdata
 
   yugabyte-2:
     container_name: &yb_host_2 yugabyte-2
@@ -147,15 +160,39 @@ services:
       - nats-1
     #ports:
     #  - "4444:4444"
+  keyword-service:
+    container_name: keyword-service
+    build:
+      context: .
+      dockerfile: ./keyword-service/Dockerfile
+    depends_on:
+      postgres-3:
+        condition: service_started
+    environment:
+      DATABASE_DRIVER: postgres
+      DATABASE_HOST: *pg_host3
+      DATABASE_PORT: "5432"
+      DATABASE_USERNAME: *pg_user3
+      DATABASE_PASSWORD: *pg_pass3
+      DATABASE_NAME: *pg_db3
+      DATABASE_OPTIONS: sslmode=disable
+    networks:
+      - app
+      - pgsql-3
+      - nats-1
+    ports:
+      - "5555:5555"
 
 networks:
   app:
   pgsql-1:
   pgsql-2:
+  pgsql-3:
   nats-1:
   yb:
 
 volumes:
   postgres-data-1:
   postgres-data-2:
+  postgres-data-3:
   ybdata:
