@@ -49,3 +49,14 @@ type User struct {
 	FistName    string `json:"first_name,omitempty"`
 	LastName    string `json:"last_name,omitempty"`
 }
+
+type Keyword struct {
+	// identifier and state fields
+	ID        uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+
+	// model fields
+	Value string `json:"value,omitempty" gorm:"not null;unique"`
+}
