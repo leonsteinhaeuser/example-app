@@ -43,6 +43,19 @@ services:
       - pgsql-3
     volumes:
       - postgres-data-3:/var/lib/postgresql/data/pgdata
+  postgres-4:
+    container_name: &pg_host4 postgres-4
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: &pg_user4 articlecomment_service
+      POSTGRES_PASSWORD: &pg_pass4 articlecomment_service
+      POSTGRES_DB: &pg_db4 articlecomment_service
+      PGDATA: /var/lib/postgresql/data/pgdata
+    networks:
+      - pgsql-4
+    volumes:
+      - postgres-data-4:/var/lib/postgresql/data/pgdata
 
   yugabyte-2:
     container_name: &yb_host_2 yugabyte-2
@@ -182,12 +195,36 @@ services:
       - nats-1
     ports:
       - "5555:5555"
+  articlecomment-service:
+    container_name: articlecomment-service
+    build:
+      context: .
+      dockerfile: ./articlecomment-service/Dockerfile
+    depends_on:
+      postgres-4:
+        condition: service_started
+    environment:
+      DATABASE_DRIVER: postgres
+      DATABASE_HOST: *pg_host4
+      DATABASE_PORT: "5432"
+      DATABASE_USERNAME: *pg_user4
+      DATABASE_PASSWORD: *pg_pass4
+      DATABASE_NAME: *pg_db4
+      DATABASE_OPTIONS: sslmode=disable
+    networks:
+      - app
+      - pgsql-4
+      - nats-1
+    ports:
+      - "6666:6666"
+
 
 networks:
   app:
   pgsql-1:
   pgsql-2:
   pgsql-3:
+  pgsql-4:
   nats-1:
   yb:
 
@@ -195,4 +232,5 @@ volumes:
   postgres-data-1:
   postgres-data-2:
   postgres-data-3:
+  postgres-data-4:
   ybdata:
