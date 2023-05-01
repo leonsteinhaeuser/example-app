@@ -31,6 +31,38 @@ services:
     volumes:
       - postgres-data-2:/var/lib/postgresql/data/pgdata
 
+  yugabyte-2:
+    container_name: &yb_host_2 yugabyte-2
+    image: yugabytedb/yugabyte
+    ports:
+      - 7000:7000 # YB-Master UI
+      - 9000:9000 # YB-TServer UI
+      - 5433:5433 # YSQL-PostgreSQL API
+      - 9042:9042 # YCQL-Cassandra API
+    networks:
+      - pgsql-2
+      - yb
+    command: bin/yugabyted start --advertise_address=0.0.0.0 --daemon=false --base_dir=/home/yugabyte/yb_data
+    volumes:
+      - ybdata:/home/yugabyte/yb_data
+
+  init-yugabyte-2:
+    container_name: init-yugabyte-2
+    image: yugabytedb/yugabyte-client
+    depends_on:
+      - yugabyte-2
+    networks:
+      - yb
+    volumes:
+      - ./scripts:/srv/scripts
+    entrypoint: /home/yugabyte/bin/ysqlsh
+    command:
+    - -h "yugabyte-2"
+    - -p "5433"
+    - -U "yugabyte"
+    - -w "yugabyte"
+    - -f /srv/scripts/init_db_user_service.sql
+
   nats-1:
     image: nats:2.9.16-alpine
     container_name: nats-1
@@ -120,7 +152,9 @@ networks:
   pgsql-1:
   pgsql-2:
   nats-1:
+  yb:
 
 volumes:
   postgres-data-1:
   postgres-data-2:
+  ybdata:
