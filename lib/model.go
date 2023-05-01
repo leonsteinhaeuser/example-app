@@ -60,3 +60,16 @@ type Keyword struct {
 	// model fields
 	Value string `json:"value,omitempty" gorm:"not null;unique"`
 }
+
+type ArticleComment struct {
+	// identifier and state fields
+	ID        uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+
+	// model fields
+	ArticleID string `json:"article_id,omitempty" gorm:"not null;type:uuid"`
+	AuthorID  string `json:"author_id,omitempty" gorm:"not null;type:uuid"`
+	Text      string `json:"text,omitempty"`
+}
