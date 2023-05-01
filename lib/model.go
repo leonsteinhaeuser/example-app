@@ -32,3 +32,20 @@ type Article struct {
 
 	KeywordIDs pq.StringArray `json:"keyword_ids,omitempty" gorm:"type:uuid[]"`
 }
+
+type User struct {
+	// identifier and state fields
+	ID        uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+
+	// model fields
+	Username    string `json:"username,omitempty" gorm:"not null;unique"`
+	DisplayName string `json:"display_name,omitempty"`
+	Password    string `json:"password,omitempty" gorm:"not null"`
+	Email       string `json:"email,omitempty" gorm:"not null;unique"`
+	IsConfirmed bool   `json:"is_confirmed,omitempty"`
+	FistName    string `json:"first_name,omitempty"`
+	LastName    string `json:"last_name,omitempty"`
+}
