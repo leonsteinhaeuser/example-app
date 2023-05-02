@@ -5,11 +5,13 @@ A simple microservice app
 ```mermaid
 graph TD
   A[Client] --> B[View Service]
+  NATS[NATS Cluster]
 
   B --> C[Number Service]
 
   B --> D[Article Service]
   D --> D1[Article DB]
+  D --> NATS
 
   B --> E[User Service]
   E --> E1[User DB]
