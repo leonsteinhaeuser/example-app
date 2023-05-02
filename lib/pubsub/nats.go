@@ -8,15 +8,15 @@ import (
 )
 
 type natsResponse struct {
-	*nats.Msg
+	msg *nats.Msg
 }
 
 func (n *natsResponse) Ack() {
-	n.Ack()
+	n.msg.Ack()
 }
 
-func (n *natsResponse) Data() any {
-	return n.Data
+func (n *natsResponse) Data() []byte {
+	return n.msg.Data
 }
 
 type natsClient struct {

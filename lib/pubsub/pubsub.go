@@ -17,7 +17,7 @@ type SubscribeDataer interface {
 	// Ack acknowledges the message.
 	Ack()
 	// Data returns the message data.
-	Data() any
+	Data() []byte
 }
 
 type PublishSubscriber interface {
