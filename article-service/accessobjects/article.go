@@ -6,36 +6,72 @@ import (
 	"github.com/leonsteinhaeuser/example-app/lib"
 	"github.com/leonsteinhaeuser/example-app/lib/db"
 	"github.com/leonsteinhaeuser/example-app/lib/log"
+	"github.com/leonsteinhaeuser/example-app/lib/pubsub"
 )
 
 type Article struct {
-	db  db.Repository
-	log log.Logger
+	pubsubClient pubsub.Client
+	db           db.Repository
+	log          log.Logger
 }
 
-func NewArticle(db db.Repository, log log.Logger) *Article {
+func NewArticle(db db.Repository, log log.Logger, pubsub pubsub.Client) *Article {
 	return &Article{
-		db:  db,
-		log: log,
+		db:           db,
+		log:          log,
+		pubsubClient: pubsub.SetTopic("article"),
 	}
 }
 
 func (a *Article) Create(ctx context.Context, article *lib.Article) error {
-	return a.db.Create(ctx, article)
+	err := a.db.Create(ctx, article)
+	if err != nil {
+		return err
+	}
+	err = a.pubsubClient.Publish(pubsub.Event{
+		ID:     article.ID.String(),
+		Action: pubsub.ActionTypeCreate,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (a *Article) Update(ctx context.Context, article *lib.Article) error {
-	return a.db.Update(ctx, article, db.Selector{
+	err := a.db.Update(ctx, article, db.Selector{
 		Field: "id",
 		Value: article.ID,
 	})
+	if err != nil {
+		return err
+	}
+	err = a.pubsubClient.Publish(pubsub.Event{
+		ID:     article.ID.String(),
+		Action: pubsub.ActionTypeUpdate,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (a *Article) Delete(ctx context.Context, article *lib.Article) error {
-	return a.db.Delete(ctx, article, db.Selector{
+	err := a.db.Delete(ctx, article, db.Selector{
 		Field: "id",
 		Value: article.ID,
 	})
+	if err != nil {
+		return err
+	}
+	err = a.pubsubClient.Publish(pubsub.Event{
+		ID:     article.ID.String(),
+		Action: pubsub.ActionTypeDelete,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (a *Article) Get(ctx context.Context, id string) (*lib.Article, error) {

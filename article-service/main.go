@@ -13,6 +13,7 @@ import (
 	"github.com/leonsteinhaeuser/example-app/lib"
 	"github.com/leonsteinhaeuser/example-app/lib/db"
 	"github.com/leonsteinhaeuser/example-app/lib/log"
+	"github.com/leonsteinhaeuser/example-app/lib/pubsub"
 )
 
 var (
@@ -23,12 +24,14 @@ var (
 	dbPassword = os.Getenv("DATABASE_PASSWORD")
 	dbName     = os.Getenv("DATABASE_NAME")
 	dbOptions  = os.Getenv("DATABASE_OPTIONS")
+	natsURL    = os.Getenv("NATS_URL")
 
 	accessor db.Repository
 
 	clog log.Logger = log.NewZerlog()
 
-	pl lib.ProcessLifecycle = lib.NewProcessLifecycle([]os.Signal{os.Interrupt, os.Kill})
+	pl         lib.ProcessLifecycle = lib.NewProcessLifecycle([]os.Signal{os.Interrupt, os.Kill})
+	natsClient pubsub.Client
 )
 
 func init() {
@@ -51,12 +54,19 @@ func init() {
 		return
 	}
 	accessor = acsr
+
+	nc, err := pubsub.NewNatsClient(clog, natsURL, "general")
+	if err != nil {
+		clog.Panic(err).Log("failed to initialize nats client")
+		return
+	}
+	natsClient = nc
 }
 
 func main() {
 	ctx, cf := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cf()
-	pl.RegisterShutdownProcess(accessor.Close)
+	pl.RegisterShutdownProcess(accessor.Close, natsClient.Close)
 
 	clog.Info().Log("creating and initializing http router")
 	mux := chi.NewRouter()
@@ -69,7 +79,7 @@ func main() {
 	mux.Use(middleware.AllowContentType("application/json"))
 	mux.Use(middleware.Recoverer)
 
-	artc := accessobjects.NewArticle(accessor, clog)
+	artc := accessobjects.NewArticle(accessor, clog, natsClient)
 	err := artc.Migrate(ctx)
 	if err != nil {
 		clog.Panic(err).Log("failed to migrate article table")
