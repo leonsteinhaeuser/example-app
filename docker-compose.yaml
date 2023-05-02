@@ -56,7 +56,6 @@ services:
       - pgsql-4
     volumes:
       - postgres-data-4:/var/lib/postgresql/data/pgdata
-
   yugabyte-2:
     container_name: &yb_host_2 yugabyte-2
     image: yugabytedb/yugabyte
@@ -71,7 +70,6 @@ services:
     command: bin/yugabyted start --advertise_address=0.0.0.0 --daemon=false --base_dir=/home/yugabyte/yb_data
     volumes:
       - ybdata:/home/yugabyte/yb_data
-
   init-yugabyte-2:
     container_name: init-yugabyte-2
     image: yugabytedb/yugabyte-client
@@ -88,21 +86,32 @@ services:
     - -U "yugabyte"
     - -w "yugabyte"
     - -f /srv/scripts/init_db_user_service.sql
-
-  nats-1:
-    image: nats:2.9.16-alpine
-    container_name: nats-1
-    #ports:
-    #  - "4222:4222"
-    #  - "8222:8222"
-    #  - "6222:6222"
-    command:
-      - --user=nats
-      - --pass=nats
-      - --server_name=nats
+  nats-0:
+    image: nats
+    container_name: nats-0
+    ports:
+    #  - "4222:4222" # clients
+      - "8222:8222" # HTTP management port for information reporting
+    #  - "6222:6222" # routing port for clustering
+    command: --cluster_name NATS --cluster nats://0.0.0.0:6222 --http_port 8222 --user=nats --pass=nats
     networks:
-      - nats-1
-
+      - nats
+  nats-1:
+    image: nats
+    container_name: nats-1
+    command: --cluster_name NATS --cluster nats://0.0.0.0:6222 --routes=nats://ruser:T0pS3cr3t@nats-0:6222
+    networks:
+      - nats
+    depends_on:
+    - "nats-0"
+  nats-2:
+    image: nats
+    container_name: nats-2
+    command: --cluster_name NATS --cluster nats://0.0.0.0:6222 --routes=nats://ruser:T0pS3cr3t@nats-0:6222
+    networks:
+      - nats
+    depends_on:
+    - "nats-0"
   # services
   number-service:
     container_name: name-service
@@ -111,7 +120,6 @@ services:
       dockerfile: ./number-service/Dockerfile
     networks:
       - app
-
   view-service:
     container_name: view-service
     build:
@@ -125,15 +133,18 @@ services:
       - app
     ports:
       - "2222:2222"
-
   article-service:
     container_name: article-service
     build:
       context: .
       dockerfile: ./article-service/Dockerfile
     depends_on:
-      #init-database:
-      #  condition: service_completed_successfully
+      nats-0:
+        condition: service_started
+      nats-1:
+        condition: service_started
+      nats-2:
+        condition: service_started
       postgres-1:
         condition: service_started
     environment:
@@ -144,13 +155,13 @@ services:
       DATABASE_PASSWORD: *pg_pass
       DATABASE_NAME: *pg_db
       DATABASE_OPTIONS: sslmode=disable
+      NATS_URL: "nats://nats-0:4222,nats://nats-1:4222,nats://nats-2:4222"
     networks:
       - app
       - pgsql-1
-      - nats-1
+      - nats
     ports:
       - "13333:3333"
-
   user-service:
     container_name: user-service
     build:
@@ -170,7 +181,7 @@ services:
     networks:
       - app
       - pgsql-2
-      - nats-1
+      - nats
     #ports:
     #  - "4444:4444"
   keyword-service:
@@ -192,7 +203,7 @@ services:
     networks:
       - app
       - pgsql-3
-      - nats-1
+      - nats
     ports:
       - "5555:5555"
   articlecomment-service:
@@ -214,7 +225,7 @@ services:
     networks:
       - app
       - pgsql-4
-      - nats-1
+      - nats
     ports:
       - "6666:6666"
 
@@ -225,7 +236,7 @@ networks:
   pgsql-2:
   pgsql-3:
   pgsql-4:
-  nats-1:
+  nats:
   yb:
 
 volumes:
