@@ -28,6 +28,9 @@ require (
 	github.com/mattn/go-isatty v0.0.18 // indirect
 	github.com/mitchellh/copystructure v1.0.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.0 // indirect
+	github.com/nats-io/nats.go v1.25.0 // indirect
+	github.com/nats-io/nkeys v0.4.4 // indirect
+	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
 	github.com/stretchr/testify v1.8.2 // indirect
