@@ -2,15 +2,12 @@ package log
 
 import (
 	"io"
-	"os"
 
 	"github.com/rs/zerolog"
 )
 
 type Zerolog struct {
-	module   string
-	hostname string
-
+	module  string
 	zerolog zerolog.Logger
 }
 
@@ -25,10 +22,8 @@ func NewZerlog(options ...ZerologOption) *Zerolog {
 	for _, option := range options {
 		option(&zl)
 	}
-	hostname, _ := os.Hostname()
 	return &Zerolog{
-		zerolog:  zl,
-		hostname: hostname,
+		zerolog: zl,
 	}
 }
 
@@ -39,10 +34,8 @@ func NewZerologWithWriter(writer io.Writer, options ...ZerologOption) *Zerolog {
 	for _, option := range options {
 		option(&zl)
 	}
-	hostname, _ := os.Hostname()
 	return &Zerolog{
-		zerolog:  zl,
-		hostname: hostname,
+		zerolog: zl,
 	}
 }
 
@@ -61,71 +54,64 @@ func (z *Zerolog) SetModule(module string) Logger {
 // Trace adds a trace log to the message.
 func (z *Zerolog) Trace() Field {
 	return &zerologField{
-		module:   &z.module,
-		hostname: z.hostname,
-		event:    z.zerolog.Trace(),
-		fields:   make(map[string]interface{}),
+		module: &z.module,
+		event:  z.zerolog.Trace(),
+		fields: make(map[string]interface{}),
 	}
 }
 
 // Debug adds a debug log to the message.
 func (z *Zerolog) Debug() Field {
 	return &zerologField{
-		module:   &z.module,
-		hostname: z.hostname,
-		event:    z.zerolog.Debug(),
-		fields:   make(map[string]interface{}),
+		module: &z.module,
+		event:  z.zerolog.Debug(),
+		fields: make(map[string]interface{}),
 	}
 }
 
 // Info adds a info log to the message.
 func (z *Zerolog) Info() Field {
 	return &zerologField{
-		module:   &z.module,
-		hostname: z.hostname,
-		event:    z.zerolog.Info(),
-		fields:   make(map[string]interface{}),
+		module: &z.module,
+		event:  z.zerolog.Info(),
+		fields: make(map[string]interface{}),
 	}
 }
 
 // Warn adds a warn log to the message.
 func (z *Zerolog) Warn() Field {
 	return &zerologField{
-		module:   &z.module,
-		hostname: z.hostname,
-		event:    z.zerolog.Warn(),
-		fields:   make(map[string]interface{}),
+		module: &z.module,
+		event:  z.zerolog.Warn(),
+		fields: make(map[string]interface{}),
 	}
 }
 
 // Error adds a error log to the message.
 func (z *Zerolog) Error(err error) Field {
 	return &zerologField{
-		module:   &z.module,
-		hostname: z.hostname,
-		event:    z.zerolog.Error(),
-		err:      err,
-		fields:   make(map[string]interface{}),
+		module: &z.module,
+		event:  z.zerolog.Error(),
+		err:    err,
+		fields: make(map[string]interface{}),
 	}
 }
 
 // Panic adds a panic log to the message.
 func (z *Zerolog) Panic(err error) Field {
 	return &zerologField{
-		module:   &z.module,
-		hostname: z.hostname,
-		event:    z.zerolog.Panic(),
-		err:      err,
-		fields:   make(map[string]interface{}),
+		module: &z.module,
+		event:  z.zerolog.Panic(),
+		err:    err,
+		fields: make(map[string]interface{}),
 	}
 }
 
 type zerologField struct {
-	fields   map[string]interface{}
-	event    *zerolog.Event
-	module   *string
-	hostname string
-	err      error
+	fields map[string]interface{}
+	event  *zerolog.Event
+	module *string
+	err    error
 }
 
 // Field adds a field to the log message.
@@ -148,7 +134,6 @@ func (z *zerologField) Log(message string) {
 	if z.module != nil && *z.module != "" {
 		z.Field("module", *z.module)
 	}
-	z.Field("hostname", z.hostname)
 	z.event.Fields(z.fields).Msg(message)
 }
 
@@ -160,6 +145,5 @@ func (z *zerologField) Logf(format string, args ...interface{}) {
 	if z.module != nil && *z.module != "" {
 		z.Field("module", *z.module)
 	}
-	z.Field("hostname", z.hostname)
 	z.event.Fields(z.fields).Msgf(format, args...)
 }
