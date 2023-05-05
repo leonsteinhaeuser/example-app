@@ -11,6 +11,7 @@ import (
 	"github.com/leonsteinhaeuser/example-app/lib"
 	"github.com/leonsteinhaeuser/example-app/lib/db"
 	"github.com/leonsteinhaeuser/example-app/lib/log"
+	"github.com/leonsteinhaeuser/example-app/lib/pubsub"
 	"github.com/leonsteinhaeuser/example-app/user-service/accessobjects"
 	"github.com/leonsteinhaeuser/example-app/user-service/api"
 )
@@ -23,6 +24,7 @@ var (
 	dbPassword = os.Getenv("DATABASE_PASSWORD")
 	dbName     = os.Getenv("DATABASE_NAME")
 	dbOptions  = os.Getenv("DATABASE_OPTIONS")
+	natsURL    = os.Getenv("NATS_URL")
 
 	accessor db.Repository
 
@@ -30,9 +32,17 @@ var (
 
 	pl           lib.ProcessLifecycle = lib.NewProcessLifecycle([]os.Signal{os.Interrupt, os.Kill})
 	userAccessor *accessobjects.User
+	natsClient   pubsub.Client
 )
 
 func init() {
+	nc, err := pubsub.NewNatsClient(clog, natsURL, "general")
+	if err != nil {
+		clog.Panic(err).Log("failed to initialize nats client")
+		return
+	}
+	natsClient = nc
+
 	acsr, err := db.NewGormRepository(db.Config{
 		Driver: dbDriver,
 		Postgres: db.PostgresConfig{
@@ -51,7 +61,7 @@ func init() {
 		return
 	}
 	accessor = acsr
-	userAccessor = accessobjects.NewUser(accessor, clog)
+	userAccessor = accessobjects.NewUser(accessor, clog, natsClient)
 
 	// add extensions
 	if dbDriver == "postgres" {

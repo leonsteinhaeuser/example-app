@@ -6,57 +6,93 @@ import (
 	"github.com/leonsteinhaeuser/example-app/lib"
 	"github.com/leonsteinhaeuser/example-app/lib/db"
 	"github.com/leonsteinhaeuser/example-app/lib/log"
+	"github.com/leonsteinhaeuser/example-app/lib/pubsub"
 )
 
 type User struct {
-	db  db.Repository
-	log log.Logger
+	pubsubClient pubsub.Client
+	db           db.Repository
+	log          log.Logger
 }
 
-func NewUser(db db.Repository, log log.Logger) *User {
+func NewUser(db db.Repository, log log.Logger, pubsub pubsub.Client) *User {
 	return &User{
-		db:  db,
-		log: log,
+		db:           db,
+		log:          log,
+		pubsubClient: pubsub.SetTopic("user"),
 	}
 }
 
-func (a *User) Create(ctx context.Context, article *lib.User) error {
-	return a.db.Create(ctx, article)
+func (a *User) Create(ctx context.Context, user *lib.User) error {
+	err := a.db.Create(ctx, user)
+	if err != nil {
+		return err
+	}
+	err = a.pubsubClient.Publish(&pubsub.DefaultEvent{
+		ResourceID: user.ID,
+		ActionType: pubsub.ActionTypeCreate,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (a *User) Update(ctx context.Context, article *lib.User) error {
-	return a.db.Update(ctx, article, db.Selector{
+func (a *User) Update(ctx context.Context, user *lib.User) error {
+	err := a.db.Update(ctx, user, db.Selector{
 		Field: "id",
-		Value: article.ID,
+		Value: user.ID,
 	})
+	if err != nil {
+		return err
+	}
+	err = a.pubsubClient.Publish(&pubsub.DefaultEvent{
+		ResourceID: user.ID,
+		ActionType: pubsub.ActionTypeUpdate,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (a *User) Delete(ctx context.Context, article *lib.User) error {
-	return a.db.Delete(ctx, article, db.Selector{
+func (a *User) Delete(ctx context.Context, user *lib.User) error {
+	err := a.db.Delete(ctx, user, db.Selector{
 		Field: "id",
-		Value: article.ID,
+		Value: user.ID,
 	})
+	if err != nil {
+		return err
+	}
+	err = a.pubsubClient.Publish(&pubsub.DefaultEvent{
+		ResourceID: user.ID,
+		ActionType: pubsub.ActionTypeDelete,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (a *User) Get(ctx context.Context, id string) (*lib.User, error) {
-	article := &lib.User{}
-	err := a.db.Find(ctx, article, db.Selector{
+	user := &lib.User{}
+	err := a.db.Find(ctx, user, db.Selector{
 		Field: "id",
 		Value: id,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return article, err
+	return user, err
 }
 
 func (a *User) List(ctx context.Context) ([]*lib.User, error) {
-	var articles []*lib.User
-	err := a.db.Find(ctx, &articles)
+	var users []*lib.User
+	err := a.db.Find(ctx, &users)
 	if err != nil {
 		return nil, err
 	}
-	return articles, err
+	return users, err
 }
 
 func (a *User) Migrate(ctx context.Context) error {

@@ -168,6 +168,12 @@ services:
       context: .
       dockerfile: ./user-service/Dockerfile
     depends_on:
+      nats-0:
+        condition: service_started
+      nats-1:
+        condition: service_started
+      nats-2:
+        condition: service_started
       postgres-2:
         condition: service_started
     environment:
@@ -178,6 +184,7 @@ services:
       DATABASE_PASSWORD: *pg_pass2
       DATABASE_NAME: *pg_db2
       DATABASE_OPTIONS: sslmode=disable
+      NATS_URL: "nats://nats:nats@nats-0:4222,nats://nats:nats@nats-1:4222,nats://nats:nats@nats-2:4222"
     networks:
       - app
       - pgsql-2

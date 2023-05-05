@@ -15,6 +15,7 @@ graph TD
 
   B --> E[User Service]
   E --> E1[User DB]
+  E --> NATS
 
   B --> F[Keyword Service]
   F --> F1[Keyword DB]
