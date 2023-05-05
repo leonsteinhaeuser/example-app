@@ -13,6 +13,7 @@ import (
 	"github.com/leonsteinhaeuser/example-app/lib"
 	"github.com/leonsteinhaeuser/example-app/lib/db"
 	"github.com/leonsteinhaeuser/example-app/lib/log"
+	"github.com/leonsteinhaeuser/example-app/lib/pubsub"
 )
 
 var (
@@ -23,6 +24,7 @@ var (
 	dbPassword = os.Getenv("DATABASE_PASSWORD")
 	dbName     = os.Getenv("DATABASE_NAME")
 	dbOptions  = os.Getenv("DATABASE_OPTIONS")
+	natsURL    = os.Getenv("NATS_URL")
 
 	accessor db.Repository
 
@@ -30,9 +32,17 @@ var (
 
 	pl                     lib.ProcessLifecycle = lib.NewProcessLifecycle([]os.Signal{os.Interrupt, os.Kill})
 	articleCommentAccessor *accessobjects.ArticleComment
+	natsClient             pubsub.Client
 )
 
 func init() {
+	nc, err := pubsub.NewNatsClient(clog, natsURL, "general")
+	if err != nil {
+		clog.Panic(err).Log("failed to initialize nats client")
+		return
+	}
+	natsClient = nc
+
 	acsr, err := db.NewGormRepository(db.Config{
 		Driver: dbDriver,
 		Postgres: db.PostgresConfig{
@@ -51,7 +61,7 @@ func init() {
 		return
 	}
 	accessor = acsr
-	articleCommentAccessor = accessobjects.NewArticleComment(accessor, clog)
+	articleCommentAccessor = accessobjects.NewArticleComment(accessor, clog, natsClient)
 
 	err = articleCommentAccessor.Migrate(context.Background())
 	if err != nil {
@@ -63,7 +73,7 @@ func init() {
 func main() {
 	ctx, cf := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cf()
-	pl.RegisterShutdownProcess(accessor.Close)
+	pl.RegisterShutdownProcess(accessor.Close, natsClient.Close)
 
 	clog.Info().Log("creating and initializing http router")
 	mux := chi.NewRouter()
