@@ -22,8 +22,9 @@ func (n *natsResponse) Data() []byte {
 type natsClient struct {
 	log log.Logger
 
-	topic string
-	conn  *nats.EncodedConn
+	topic    string
+	origConn *nats.Conn
+	conn     *nats.EncodedConn
 }
 
 func NewNatsClient(log log.Logger, connectStr string, defaultTopic string) (Client, error) {
@@ -36,13 +37,15 @@ func NewNatsClient(log log.Logger, connectStr string, defaultTopic string) (Clie
 		return nil, err
 	}
 	return &natsClient{
-		log:   log,
-		topic: defaultTopic,
-		conn:  ec,
+		log:      log,
+		topic:    defaultTopic,
+		origConn: conn,
+		conn:     ec,
 	}, nil
 }
 
 func (n *natsClient) SetTopic(topic string) Client {
+	n.log.Debug().Field("topic", topic).Log("setting topic")
 	natsClients2 := &natsClient{}
 	*natsClients2 = *n
 	natsClients2.topic = topic
@@ -54,13 +57,14 @@ func (n *natsClient) Close(context.Context) error {
 	return nil
 }
 
-func (n *natsClient) Publish(message any) error {
+func (n *natsClient) Publish(message Event) error {
 	return n.conn.Publish(n.topic, message)
 }
 
-func (n *natsClient) Subscribe() (<-chan SubscribeDataer, error) {
-	streamCh := make(chan SubscribeDataer)
+func (n *natsClient) Subscribe() (<-chan SubscribeDater, error) {
+	streamCh := make(chan SubscribeDater)
 	_, err := n.conn.Subscribe(n.topic, func(msg *nats.Msg) {
+		// add message to channel
 		streamCh <- &natsResponse{msg}
 	})
 	if err != nil {
