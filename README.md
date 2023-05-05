@@ -18,6 +18,7 @@ graph TD
 
   B --> F[Keyword Service]
   F --> F1[Keyword DB]
+  B --> NATS
 
   B --> G[Article Comment Service]
   G --> G1[Article Comment DB]
