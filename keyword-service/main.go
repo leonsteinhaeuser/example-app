@@ -75,6 +75,7 @@ func main() {
 	mux.Use(log.LoggerMiddleware(clog))
 	mux.Use(middleware.AllowContentType("application/json"))
 	mux.Use(middleware.Recoverer)
+	mux.Get("/healthz", lib.Healthz)
 
 	clog.Info().Log("defining http routes")
 	api.NewKeywordRouter(*keywordAccessor, clog).Router(mux)

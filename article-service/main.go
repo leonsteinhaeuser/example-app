@@ -78,6 +78,7 @@ func main() {
 	mux.Use(log.LoggerMiddleware(clog))
 	mux.Use(middleware.AllowContentType("application/json"))
 	mux.Use(middleware.Recoverer)
+	mux.Get("/healthz", lib.Healthz)
 
 	artc := accessobjects.NewArticle(accessor, clog, natsClient)
 	err := artc.Migrate(ctx)
