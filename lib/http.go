@@ -16,6 +16,7 @@ var (
 	ErrStatusCodeMismatch  = errors.New("http status code mismatch")
 )
 
+// CheckAndParseResponse checks the given response for the expected status code and content type and parses the body
 func CheckAndParseResponse[T any](rsp *http.Response, expectedStatus int) (*T, error) {
 	data := new(T)
 	// check for content type
@@ -51,16 +52,23 @@ type Client[T any] interface {
 	Delete(ctx context.Context, data T) error
 }
 
+type CustomArticleClient[T any] interface {
+	Client[T]
+	DeleteByArticleID(ctx context.Context, data T) error
+}
+
 type HttpError struct {
 	Status  int
 	Message string
 	Reason  string
 }
 
+// Error implements the error interface
 func (h *HttpError) Error() string {
 	return fmt.Sprintf("%d %s %q", h.Status, h.Message, h.Reason)
 }
 
+// Healthz is a simple health check handler
 func Healthz(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("ok"))
@@ -72,10 +80,12 @@ type Router interface {
 	Router(chi.Router)
 }
 
+// GetIntParam returns the value of the given param as int
 func GetStringParam(r *http.Request, param string) string {
 	return chi.URLParam(r, param)
 }
 
+// WriteJSON parses the given data to json and writes it to the response writer
 func WriteJSON(w http.ResponseWriter, statusCode int, data interface{}) error {
 	JSONHeaderStatus(w, statusCode)
 	return json.NewEncoder(w).Encode(data)
@@ -85,9 +95,9 @@ func WriteJSON(w http.ResponseWriter, statusCode int, data interface{}) error {
 func JSONHeaderStatus(w http.ResponseWriter, statusCode int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	return json.NewEncoder(w).Encode(data)
 }
 
+// WriteError parses the given error to json and writes it to the response writer
 func WriteError(w http.ResponseWriter, statusCode int, msg string, err error) error {
 	return WriteJSON(w, statusCode, HttpError{
 		Status:  statusCode,
@@ -96,10 +106,12 @@ func WriteError(w http.ResponseWriter, statusCode int, msg string, err error) er
 	})
 }
 
+// ReadJSON parses the request body to the given data struct
 func ReadJSON(r *http.Request, data interface{}) error {
 	return json.NewDecoder(r.Body).Decode(data)
 }
 
+// WalkRoutes logs all registered routes
 func WalkRoutes(r chi.Router, log log.Logger) {
 	chi.Walk(r, func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
 		log.Debug().
