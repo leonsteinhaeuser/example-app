@@ -19,10 +19,11 @@ graph TD
 
   B --> F[Keyword Service]
   F --> F1[Keyword DB]
-  B --> NATS
+  F --> NATS
 
   B --> G[Article Comment Service]
   G --> G1[Article Comment DB]
+  G --> NATS
 
   NATS --> H[Article Consumer Service]
   H --> G
