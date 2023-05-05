@@ -77,6 +77,12 @@ func GetStringParam(r *http.Request, param string) string {
 }
 
 func WriteJSON(w http.ResponseWriter, statusCode int, data interface{}) error {
+	JSONHeaderStatus(w, statusCode)
+	return json.NewEncoder(w).Encode(data)
+}
+
+// JSONHeaderStatus sets the content type header to application/json and the status code
+func JSONHeaderStatus(w http.ResponseWriter, statusCode int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	return json.NewEncoder(w).Encode(data)
