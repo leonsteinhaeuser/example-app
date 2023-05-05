@@ -69,7 +69,7 @@ type ArticleComment struct {
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 
 	// model fields
-	ArticleID string `json:"article_id,omitempty" gorm:"not null;type:uuid"`
-	AuthorID  string `json:"author_id,omitempty" gorm:"not null;type:uuid"`
-	Text      string `json:"text,omitempty"`
+	ArticleID uuid.UUID `json:"article_id,omitempty" gorm:"not null;type:uuid"`
+	AuthorID  uuid.UUID `json:"author_id,omitempty" gorm:"not null;type:uuid"`
+	Text      string    `json:"text,omitempty"`
 }
