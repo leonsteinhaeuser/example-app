@@ -155,7 +155,7 @@ services:
       DATABASE_PASSWORD: *pg_pass
       DATABASE_NAME: *pg_db
       DATABASE_OPTIONS: sslmode=disable
-      NATS_URL: "nats://nats-0:4222,nats://nats-1:4222,nats://nats-2:4222"
+      NATS_URL: "nats://nats:nats@nats-0:4222,nats://nats:nats@nats-1:4222,nats://nats:nats@nats-2:4222"
     networks:
       - app
       - pgsql-1
@@ -228,6 +228,26 @@ services:
       - nats
     ports:
       - "6666:6666"
+  article-consumer-service:
+    container_name: article-consumer-service
+    build:
+      context: .
+      dockerfile: ./article-consumer-service/Dockerfile
+    depends_on:
+      nats-0:
+        condition: service_started
+      nats-1:
+        condition: service_started
+      nats-2:
+        condition: service_started
+    environment:
+      NATS_URL: "nats://nats:nats@nats-0:4222,nats://nats:nats@nats-1:4222,nats://nats:nats@nats-2:4222"
+      ARTICLE_COMMENT_SERVICE_URL: "http://articlecomment-service:6666"
+    networks:
+      - app
+      - nats
+    #ports:
+    #  - "7777:7777"
 
 
 networks:
