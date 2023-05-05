@@ -28,9 +28,9 @@ func (a *Article) Create(ctx context.Context, article *lib.Article) error {
 	if err != nil {
 		return err
 	}
-	err = a.pubsubClient.Publish(pubsub.Event{
-		ID:     article.ID.String(),
-		Action: pubsub.ActionTypeCreate,
+	err = a.pubsubClient.Publish(&pubsub.DefaultEvent{
+		ResourceID: article.ID,
+		ActionType: pubsub.ActionTypeCreate,
 	})
 	if err != nil {
 		return err
@@ -46,9 +46,9 @@ func (a *Article) Update(ctx context.Context, article *lib.Article) error {
 	if err != nil {
 		return err
 	}
-	err = a.pubsubClient.Publish(pubsub.Event{
-		ID:     article.ID.String(),
-		Action: pubsub.ActionTypeUpdate,
+	err = a.pubsubClient.Publish(&pubsub.DefaultEvent{
+		ResourceID: article.ID,
+		ActionType: pubsub.ActionTypeUpdate,
 	})
 	if err != nil {
 		return err
@@ -64,9 +64,9 @@ func (a *Article) Delete(ctx context.Context, article *lib.Article) error {
 	if err != nil {
 		return err
 	}
-	err = a.pubsubClient.Publish(pubsub.Event{
-		ID:     article.ID.String(),
-		Action: pubsub.ActionTypeDelete,
+	err = a.pubsubClient.Publish(&pubsub.DefaultEvent{
+		ResourceID: article.ID,
+		ActionType: pubsub.ActionTypeDelete,
 	})
 	if err != nil {
 		return err
