@@ -21,4 +21,7 @@ graph TD
 
   B --> G[Article Comment Service]
   G --> G1[Article Comment DB]
+
+  NATS --> H[Article Consumer Service]
+  H --> G
 ```
