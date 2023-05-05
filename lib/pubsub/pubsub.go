@@ -57,6 +57,8 @@ type DefaultEvent struct {
 	ResourceID uuid.UUID
 	// ActionType is the type of the event.
 	ActionType ActionType
+	// AdditionalData is additional data that can be used to pass additional information.
+	AdditionalData map[string]any
 }
 
 // ID is the ID of the object that was created, updated or deleted.
