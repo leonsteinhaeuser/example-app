@@ -6,57 +6,93 @@ import (
 	"github.com/leonsteinhaeuser/example-app/lib"
 	"github.com/leonsteinhaeuser/example-app/lib/db"
 	"github.com/leonsteinhaeuser/example-app/lib/log"
+	"github.com/leonsteinhaeuser/example-app/lib/pubsub"
 )
 
 type Keyword struct {
-	db  db.Repository
-	log log.Logger
+	pubsubClient pubsub.Client
+	db           db.Repository
+	log          log.Logger
 }
 
-func NewKeyword(db db.Repository, log log.Logger) *Keyword {
+func NewKeyword(db db.Repository, log log.Logger, pubsub pubsub.Client) *Keyword {
 	return &Keyword{
-		db:  db,
-		log: log,
+		db:           db,
+		log:          log,
+		pubsubClient: pubsub.SetTopic("keyword"),
 	}
 }
 
-func (a *Keyword) Create(ctx context.Context, article *lib.Keyword) error {
-	return a.db.Create(ctx, article)
+func (a *Keyword) Create(ctx context.Context, keyword *lib.Keyword) error {
+	err := a.db.Create(ctx, keyword)
+	if err != nil {
+		return err
+	}
+	err = a.pubsubClient.Publish(&pubsub.DefaultEvent{
+		ResourceID: keyword.ID,
+		ActionType: pubsub.ActionTypeCreate,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (a *Keyword) Update(ctx context.Context, article *lib.Keyword) error {
-	return a.db.Update(ctx, article, db.Selector{
+func (a *Keyword) Update(ctx context.Context, keyword *lib.Keyword) error {
+	err := a.db.Update(ctx, keyword, db.Selector{
 		Field: "id",
-		Value: article.ID,
+		Value: keyword.ID,
 	})
+	if err != nil {
+		return err
+	}
+	err = a.pubsubClient.Publish(&pubsub.DefaultEvent{
+		ResourceID: keyword.ID,
+		ActionType: pubsub.ActionTypeUpdate,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (a *Keyword) Delete(ctx context.Context, article *lib.Keyword) error {
-	return a.db.Delete(ctx, article, db.Selector{
+func (a *Keyword) Delete(ctx context.Context, keyword *lib.Keyword) error {
+	err := a.db.Delete(ctx, keyword, db.Selector{
 		Field: "id",
-		Value: article.ID,
+		Value: keyword.ID,
 	})
+	if err != nil {
+		return err
+	}
+	err = a.pubsubClient.Publish(&pubsub.DefaultEvent{
+		ResourceID: keyword.ID,
+		ActionType: pubsub.ActionTypeDelete,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (a *Keyword) Get(ctx context.Context, id string) (*lib.Keyword, error) {
-	article := &lib.Keyword{}
-	err := a.db.Find(ctx, article, db.Selector{
+	keyword := &lib.Keyword{}
+	err := a.db.Find(ctx, keyword, db.Selector{
 		Field: "id",
 		Value: id,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return article, err
+	return keyword, err
 }
 
 func (a *Keyword) List(ctx context.Context) ([]*lib.Keyword, error) {
-	var articles []*lib.Keyword
-	err := a.db.Find(ctx, &articles)
+	var keywords []*lib.Keyword
+	err := a.db.Find(ctx, &keywords)
 	if err != nil {
 		return nil, err
 	}
-	return articles, err
+	return keywords, err
 }
 
 func (a *Keyword) Migrate(ctx context.Context) error {
