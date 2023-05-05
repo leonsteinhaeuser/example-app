@@ -24,6 +24,7 @@ func NewArticleCommentRouter(articleCommentAccessObject accessobjects.ArticleCom
 
 func (a *articleCommentRouter) Router(r chi.Router) {
 	r.Route("/comment", func(r chi.Router) {
+		r.Delete("/article/{id}", a.deleteByArticleID)
 		r.Route("/{id}", func(r chi.Router) {
 			r.Get("/", a.get)
 			r.Put("/", a.put)
@@ -132,7 +133,30 @@ func (a *articleCommentRouter) delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	lib.JSONHeaderStatus(w, http.StatusNoContent)
+}
+
+func (a *articleCommentRouter) deleteByArticleID(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	id := lib.GetStringParam(r, "id")
+	a.log.Debug().Field("id", id).Log("deleting article comment by id")
+
+	uid, err := uuid.Parse(id)
+	if err != nil {
+		a.log.Error(err).Field("id", id).Log("failed to parse id")
+		lib.WriteError(w, http.StatusBadRequest, "failed to parse id", err)
+		return
+	}
+
+	articleComment := &lib.ArticleComment{ArticleID: uid}
+	err = a.articleCommentAccessObject.DeleteByArticleID(ctx, articleComment)
+	if err != nil {
+		a.log.Error(err).Field("id", id).Log("failed to delete articleComment")
+		lib.WriteError(w, http.StatusInternalServerError, "failed to delete articleComment", err)
+		return
+	}
+
+	lib.JSONHeaderStatus(w, http.StatusNoContent)
 }
 
 func (a *articleCommentRouter) post(w http.ResponseWriter, r *http.Request) {

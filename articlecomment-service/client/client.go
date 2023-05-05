@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"time"
@@ -25,7 +26,7 @@ type articleCommentClient struct {
 // NewArticleCommentClient returns a new ArticleComment client
 // The client configures an http.Client with a 5 second timeout
 // serviceURL should be in the format of http://host:port
-func NewArticleCommentClient(log log.Logger, serviceURL string) lib.Client[lib.ArticleComment] {
+func NewArticleCommentClient(log log.Logger, serviceURL string) lib.CustomArticleClient[lib.ArticleComment] {
 	log.Info().Logf("creating articleComment client for %s", serviceURL)
 	return &articleCommentClient{
 		log:        log,
@@ -37,7 +38,7 @@ func NewArticleCommentClient(log log.Logger, serviceURL string) lib.Client[lib.A
 }
 
 func (c *articleCommentClient) basePath(optionals ...string) (string, error) {
-	paths := append([]string{"articleComment"}, optionals...)
+	paths := append([]string{"comment"}, optionals...)
 	path, err := url.JoinPath(c.serviceURL, paths...)
 	if err != nil {
 		return "", err
@@ -55,6 +56,7 @@ func (c *articleCommentClient) GetByID(ctx context.Context, id string) (*lib.Art
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Set("Content-Type", "application/json")
 
 	rsp, err := c.client.Do(req)
 	if err != nil {
@@ -79,6 +81,7 @@ func (c *articleCommentClient) List(ctx context.Context) ([]lib.ArticleComment, 
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Set("Content-Type", "application/json")
 
 	rsp, err := c.client.Do(req)
 	if err != nil {
@@ -164,7 +167,7 @@ func (c *articleCommentClient) Delete(ctx context.Context, articleComment lib.Ar
 		return err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "PUT", path, bytes.NewBuffer(bts))
+	req, err := http.NewRequestWithContext(ctx, "DELETE", path, bytes.NewBuffer(bts))
 	if err != nil {
 		return err
 	}
@@ -180,5 +183,37 @@ func (c *articleCommentClient) Delete(ctx context.Context, articleComment lib.Ar
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (c *articleCommentClient) DeleteByArticleID(ctx context.Context, articleComment lib.ArticleComment) error {
+	path, err := c.basePath("article", articleComment.ArticleID.String())
+	if err != nil {
+		return err
+	}
+
+	bts, err := json.Marshal(articleComment)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "DELETE", path, bytes.NewBuffer(bts))
+	if err != nil {
+		c.log.Trace().Field("error", err).Log("error during forming request")
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	rsp, err := c.client.Do(req)
+	if err != nil {
+		c.log.Trace().Field("error", err).Log("error deleting articleComment")
+		return err
+	}
+	defer rsp.Body.Close()
+
+	if rsp.StatusCode != http.StatusNoContent {
+		return fmt.Errorf("server returned non empty reply status code: %d", rsp.StatusCode)
+	}
+
 	return nil
 }

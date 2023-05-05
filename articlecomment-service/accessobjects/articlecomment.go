@@ -38,6 +38,13 @@ func (a *ArticleComment) Delete(ctx context.Context, article *lib.ArticleComment
 	})
 }
 
+func (a *ArticleComment) DeleteByArticleID(ctx context.Context, article *lib.ArticleComment) error {
+	return a.db.Delete(ctx, article, db.Selector{
+		Field: "article_id",
+		Value: article.ArticleID,
+	})
+}
+
 func (a *ArticleComment) Get(ctx context.Context, id string) (*lib.ArticleComment, error) {
 	article := &lib.ArticleComment{}
 	err := a.db.Find(ctx, article, db.Selector{
