@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/leonsteinhaeuser/example-app/lib"
+	"github.com/leonsteinhaeuser/example-app/internal"
 )
 
 var (
@@ -72,7 +72,7 @@ func getNumberFromNumberService(ctx context.Context) (int64, error) {
 		return 0, err
 	}
 	// parse response
-	data := lib.NumberResponse{}
+	data := internal.NumberResponse{}
 	err = json.NewDecoder(resp.Body).Decode(&data)
 	if err != nil {
 		return 0, err

@@ -5,12 +5,12 @@ import (
 	"math/rand"
 	"net/http"
 
-	"github.com/leonsteinhaeuser/example-app/lib"
+	"github.com/leonsteinhaeuser/example-app/internal"
 )
 
 func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(lib.NumberResponse{
+		json.NewEncoder(w).Encode(internal.NumberResponse{
 			Number: rand.Int63(),
 		})
 	})
