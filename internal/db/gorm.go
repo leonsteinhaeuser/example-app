@@ -5,9 +5,41 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/leonsteinhaeuser/example-app/internal/env"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
+
+// PosgresConfigFromEnv returns a PostgresConfig struct with values from the environment.
+// If no environment variables are set, it will return a PostgresConfig with default values.
+//
+// The following environment variables are used:
+// - POSTGRES_HOST (default: localhost)
+// - POSTGRES_PORT (default: 5432)
+// - POSTGRES_USERNAME (default: "")
+// - POSTGRES_PASSWORD (default: "")
+// - POSTGRES_DATABASE (default: "")
+// - POSTGRES_OPTIONS (default: sslmode=disable)
+// - POSTGRES_MAX_OPEN_CONNS (default: 10)
+// - POSTGRES_MAX_IDLE_CONNS (default: 10)
+// - POSTGRES_MAX_IDLE_CONN_TIME_SEC (default: 10)
+// - POSTGRES_MAX_CONN_LIFETIME_SEC (default: 10)
+func PosgresConfigFromEnv() PostgresConfig {
+	return PostgresConfig{
+		Host: env.GetStringEnvOrDefault("POSTGRES_HOST", "localhost"),
+		Port: env.GetStringEnvOrDefault("POSTGRES_PORT", "5432"),
+		// Username, Password and Database are required, so we don't provide a default value.
+		Username:     env.GetStringEnvOrDefault("POSTGRES_USERNAME", ""),
+		Password:     env.GetStringEnvOrDefault("POSTGRES_PASSWORD", ""),
+		Database:     env.GetStringEnvOrDefault("POSTGRES_DATABASE", ""),
+		Options:      env.GetStringEnvOrDefault("POSTGRES_OPTIONS", "sslmode=disable"),
+		MaxOpenConns: env.GetIntEnvOrDefault("POSTGRES_MAX_OPEN_CONNS", 10),
+		MaxIdleConns: env.GetIntEnvOrDefault("POSTGRES_MAX_IDLE_CONNS", 10),
+		// MaxIdleConnTime and MaxConnLifetime are time.Duration values, so we need to parse them.
+		MaxIdleConnTime: time.Duration(env.GetIntEnvOrDefault("POSTGRES_MAX_IDLE_CONN_TIME_SEC", 10)) * time.Second,
+		MaxConnLifetime: time.Duration(env.GetIntEnvOrDefault("POSTGRES_MAX_CONN_LIFETIME_SEC", 10)) * time.Second,
+	}
+}
 
 type PostgresConfig struct {
 	Host     string
