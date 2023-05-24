@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/leonsteinhaeuser/example-app/internal/log"
 )
 
 // Router is an interface used to define the routes of the server
@@ -14,21 +15,23 @@ type Router interface {
 }
 
 type Server struct {
-	server http.Server
+	logger log.Logger
 
+	server http.Server
 	router chi.Router
 }
 
-func NewDefaultServer(listen string) *Server {
+func NewDefaultServer(logger log.Logger, listen string) *Server {
 	rt := chi.NewRouter()
 	rt.Use(middleware.RequestID)
 	rt.Use(middleware.RealIP)
 	rt.Use(middleware.NoCache)
 	rt.Use(middleware.CleanPath)
-	rt.Use(middleware.Logger)
+	rt.Use(log.LoggerMiddleware(logger))
 	rt.Use(middleware.AllowContentType("application/json"))
 	rt.Use(middleware.Recoverer)
 	return &Server{
+		logger: logger,
 		server: http.Server{
 			Addr:         listen,
 			Handler:      rt,
