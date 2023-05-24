@@ -7,11 +7,14 @@ import (
 
 	"github.com/leonsteinhaeuser/example-app/internal"
 	"github.com/leonsteinhaeuser/example-app/internal/env"
+	"github.com/leonsteinhaeuser/example-app/internal/log"
 	"github.com/leonsteinhaeuser/example-app/internal/server"
 )
 
 var (
-	httpServer = server.NewDefaultServer(env.GetStringEnvOrDefault("LISTEN_ADDRESS", ":1111"))
+	logr = log.NewZerlog()
+
+	httpServer = server.NewDefaultServer(logr, env.GetStringEnvOrDefault("LISTEN_ADDRESS", ":1111"))
 	httpRouter = server.NewGenericRouter()
 )
 
