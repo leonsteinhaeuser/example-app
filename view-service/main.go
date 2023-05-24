@@ -5,13 +5,17 @@ import (
 	"encoding/json"
 	"html/template"
 	"net/http"
-	"os"
 
 	"github.com/leonsteinhaeuser/example-app/internal"
+	"github.com/leonsteinhaeuser/example-app/internal/env"
+	"github.com/leonsteinhaeuser/example-app/internal/server"
 )
 
 var (
-	numberServiceAddress = os.Getenv("NUMBER_SERVICE_ADDRESS")
+	numberServiceAddress = env.GetStringEnvOrDefault("NUMBER_SERVICE_ADDRESS", "http://localhost:1111")
+
+	httpServer = server.NewDefaultServer(env.GetStringEnvOrDefault("LISTEN_ADDRESS", ":1112"))
+	httpRouter = server.NewGenericRouter()
 
 	stringTemplate = `
 <html>
@@ -37,7 +41,7 @@ func init() {
 }
 
 func main() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	httpRouter.AddEndpoint("GET", "/", func(w http.ResponseWriter, r *http.Request) {
 		number, err := getNumberFromNumberService(r.Context())
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -52,11 +56,15 @@ func main() {
 			return
 		}
 	})
-	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+	httpRouter.AddEndpoint("GET", "/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok"))
 	})
-	http.ListenAndServe(":2222", nil)
+	httpServer.AddRouter(httpRouter)
+	err := httpServer.Start()
+	if err != nil {
+		panic(err)
+	}
 }
 
 func getNumberFromNumberService(ctx context.Context) (int64, error) {
