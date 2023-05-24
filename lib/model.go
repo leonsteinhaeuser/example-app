@@ -73,3 +73,17 @@ type ArticleComment struct {
 	AuthorID  uuid.UUID `json:"author_id,omitempty" gorm:"not null;type:uuid"`
 	Text      string    `json:"text,omitempty"`
 }
+
+type File struct {
+	// identifier and state fields
+	ID        uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+
+	// model fields
+	// Name represents the name of the file
+	Name string `json:"name,omitempty"`
+	// Path represents the path of the file
+	Path string `json:"-"`
+}

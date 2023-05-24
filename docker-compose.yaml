@@ -56,6 +56,19 @@ services:
       - pgsql-4
     volumes:
       - postgres-data-4:/var/lib/postgresql/data/pgdata
+  postgres-5:
+    container_name: &pg_host5 postgres-5
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: &pg_user5 file_service
+      POSTGRES_PASSWORD: &pg_pass5 file_service
+      POSTGRES_DB: &pg_db5 file_service
+      PGDATA: /var/lib/postgresql/data/pgdata
+    networks:
+      - pgsql-5
+    volumes:
+      - postgres-data-5:/var/lib/postgresql/data/pgdata
   yugabyte-2:
     container_name: &yb_host_2 yugabyte-2
     image: yugabytedb/yugabyte
@@ -112,6 +125,20 @@ services:
       - nats
     depends_on:
     - "nats-0"
+  #
+  minio-0:
+    container_name: minio-0
+    image: quay.io/minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ACCESS_KEY: minio
+      MINIO_SECRET_KEY: minio123
+    ports:
+      - 19001:9001
+    networks:
+      - minio
+    volumes:
+    - minio-data-0:/data
   # services
   number-service:
     container_name: name-service
@@ -269,7 +296,35 @@ services:
       - nats
     #ports:
     #  - "7777:7777"
-
+  file-service:
+    container_name: file-service
+    build:
+      context: .
+      dockerfile: ./file-service/Dockerfile
+    depends_on:
+      nats-0:
+        condition: service_started
+      nats-1:
+        condition: service_started
+      nats-2:
+        condition: service_started
+      postgres-5:
+        condition: service_started
+    environment:
+      DATABASE_DRIVER: postgres
+      DATABASE_HOST: *pg_host5
+      DATABASE_PORT: "5432"
+      DATABASE_USERNAME: *pg_user5
+      DATABASE_PASSWORD: *pg_pass5
+      DATABASE_NAME: *pg_db5
+      DATABASE_OPTIONS: sslmode=disable
+      NATS_URL: "nats://nats:nats@nats-0:4222,nats://nats:nats@nats-1:4222,nats://nats:nats@nats-2:4222"
+    networks:
+      - app
+      - pgsql-5
+      - nats
+    ports:
+      - "8888:8888"
 
 networks:
   app:
@@ -277,12 +332,16 @@ networks:
   pgsql-2:
   pgsql-3:
   pgsql-4:
+  pgsql-5:
   nats:
   yb:
+  minio:
 
 volumes:
   postgres-data-1:
   postgres-data-2:
   postgres-data-3:
   postgres-data-4:
+  postgres-data-5:
   ybdata:
+  minio-data-0:
