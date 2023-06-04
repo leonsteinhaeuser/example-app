@@ -99,36 +99,22 @@ func (p *gormRepository) Create(ctx context.Context, data any) error {
 	return p.DB.Model(data).Create(data).Error
 }
 
-func (p *gormRepository) Find(ctx context.Context, data any, selectors ...Options) error {
-	tx := p.DB.Model(data)
-	limitCount := 0
-	for _, selector := range selectors {
-		fmt.Println("selector", selector)
-		// if limit is set, use it only once (first selector)
-		if selector.Limit != nil && limitCount == 0 {
-			tx = tx.Limit(*selector.Limit)
-			limitCount++
-			continue
-		}
-		tx = tx.Where(selector.Field+" = ?", selector.Value)
+func (p *gormRepository) Find(data any) TX {
+	return &gormTX{
+		tx: p.DB.Model(data).Find(data),
 	}
-	return tx.Find(data).Error
 }
 
-func (p *gormRepository) Update(ctx context.Context, data any, selectors ...Options) error {
-	tx := p.DB.Model(data)
-	for _, selector := range selectors {
-		tx = tx.Where(selector.Field, selector.Value)
+func (p *gormRepository) Update(data any) TX {
+	return &gormTX{
+		tx: p.DB.Model(data).Updates(data),
 	}
-	return tx.Updates(data).Error
 }
 
-func (p *gormRepository) Delete(ctx context.Context, data any, selectors ...Options) error {
-	tx := p.DB.Model(data)
-	for _, selector := range selectors {
-		tx = tx.Where(selector.Field, selector.Value)
+func (p *gormRepository) Delete(data any) TX {
+	return &gormTX{
+		tx: p.DB.Model(data).Delete(data),
 	}
-	return tx.Delete(data).Error
 }
 
 func (p *gormRepository) Migrate(ctx context.Context, model any) error {
@@ -145,4 +131,8 @@ func (p *gormRepository) Close(context.Context) error {
 
 func (p *gormRepository) Raw(ctx context.Context, query string, args ...any) error {
 	return p.DB.Raw(query, args).Error
+}
+
+func (p *gormRepository) FindV2(ctx context.Context, data any, tx TX) {
+	p.DB.Find(data)
 }
