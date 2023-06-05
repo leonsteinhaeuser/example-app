@@ -49,8 +49,9 @@ type RedisConfig struct {
 }
 
 type redisKeyStore struct {
-	setFunc func(ctx context.Context, key string, value any, expiration time.Duration) *redis.StatusCmd
-	getFunc func(ctx context.Context, key string) *redis.StringCmd
+	setFunc    func(ctx context.Context, key string, value any, expiration time.Duration) *redis.StatusCmd
+	getFunc    func(ctx context.Context, key string) *redis.StringCmd
+	deleteFunc func(ctx context.Context, keys ...string) *redis.IntCmd
 
 	closeFunc func() error
 }
@@ -69,6 +70,7 @@ func NewRedisKeyStore(cfg RedisConfig) (KeyStore, error) {
 		})
 		rks.setFunc = rc.Set
 		rks.getFunc = rc.Get
+		rks.deleteFunc = rc.Del
 		rks.closeFunc = rc.Close
 	case RedisDriverCluster:
 		rcc := redis.NewClusterClient(&redis.ClusterOptions{
@@ -83,6 +85,7 @@ func NewRedisKeyStore(cfg RedisConfig) (KeyStore, error) {
 		})
 		rks.setFunc = rcc.Set
 		rks.getFunc = rcc.Get
+		rks.deleteFunc = rcc.Del
 		rks.closeFunc = rcc.Close
 	case RedisDriverSentinel:
 		rfc := redis.NewFailoverClient(&redis.FailoverOptions{
@@ -95,6 +98,7 @@ func NewRedisKeyStore(cfg RedisConfig) (KeyStore, error) {
 		})
 		rks.setFunc = rfc.Set
 		rks.getFunc = rfc.Get
+		rks.deleteFunc = rfc.Del
 		rks.closeFunc = rfc.Close
 	case RedisDriverSentinelCluster:
 		rfcc := redis.NewFailoverClusterClient(&redis.FailoverOptions{
@@ -107,6 +111,7 @@ func NewRedisKeyStore(cfg RedisConfig) (KeyStore, error) {
 		})
 		rks.setFunc = rfcc.Set
 		rks.getFunc = rfcc.Get
+		rks.deleteFunc = rfcc.Del
 		rks.closeFunc = rfcc.Close
 	default:
 		return nil, fmt.Errorf("%w: %s", ErrUnsupportedRedisDriver, cfg.Driver)
@@ -120,6 +125,10 @@ func (rks redisKeyStore) Set(ctx context.Context, key string, value any, expirat
 
 func (rks redisKeyStore) Get(ctx context.Context, key string) ([]byte, error) {
 	return rks.getFunc(ctx, key).Bytes()
+}
+
+func (rks redisKeyStore) Delete(ctx context.Context, key string) error {
+	return rks.deleteFunc(ctx, key).Err()
 }
 
 func (rks redisKeyStore) Close() error {
