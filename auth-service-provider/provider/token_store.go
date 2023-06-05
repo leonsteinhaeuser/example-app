@@ -13,9 +13,13 @@ type TokenStore struct {
 	kv keystore.KeyStore
 }
 
+func prefixUserToken(key string) string {
+	return "utk_" + key
+}
+
 func (s *TokenStore) Get(ctx context.Context, key string) (*storage.Token, error) {
 	token := &storage.Token{}
-	tk, err := s.kv.Get(ctx, key)
+	tk, err := s.kv.Get(ctx, prefixUserToken(key))
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +35,7 @@ func (s *TokenStore) Put(ctx context.Context, key string, token *storage.Token) 
 	if err != nil {
 		return err
 	}
-	err = s.kv.Set(ctx, key, tk, 0)
+	err = s.kv.Set(ctx, prefixUserToken(key), tk, 0)
 	if err != nil {
 		return err
 	}
