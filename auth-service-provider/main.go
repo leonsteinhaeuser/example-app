@@ -16,6 +16,7 @@ func main() {
 	//which gives us the issuer: http://localhost:9998/
 	issuer := fmt.Sprintf("http://localhost:%s/", port)
 
+	// user store
 	_ = user.Store{
 		// TODO: add your database connection here
 		DB: nil,
