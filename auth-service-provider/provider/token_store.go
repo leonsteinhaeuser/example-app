@@ -3,7 +3,6 @@ package provider
 import (
 	"context"
 	"encoding/json"
-	"errors"
 
 	"github.com/leonsteinhaeuser/example-app/internal/keystore"
 	"github.com/zitadel/oidc/v2/example/server/storage"
@@ -43,5 +42,5 @@ func (s *TokenStore) Put(ctx context.Context, key string, token *storage.Token) 
 }
 
 func (s *TokenStore) Delete(ctx context.Context, key string) error {
-	return errors.New("not implemented")
+	return s.kv.Delete(ctx, prefixUserToken(key))
 }
