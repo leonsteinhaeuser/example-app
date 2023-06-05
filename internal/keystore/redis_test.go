@@ -208,6 +208,50 @@ func Test_redisKeyStore_Get(t *testing.T) {
 	}
 }
 
+func Test_redisKeyStore_Delete(t *testing.T) {
+	type fields struct {
+		deleteFunc func(ctx context.Context, key ...string) *redis.IntCmd
+		closeFunc  func() error
+	}
+	type args struct {
+		ctx context.Context
+		key string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "with value",
+			fields: fields{
+				deleteFunc: func(ctx context.Context, key ...string) *redis.IntCmd {
+					return redis.NewIntResult(1, nil)
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				key: "test",
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rks := redisKeyStore{
+				deleteFunc: tt.fields.deleteFunc,
+				closeFunc:  tt.fields.closeFunc,
+			}
+			err := rks.Delete(tt.args.ctx, tt.args.key)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("redisKeyStore.Delete() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
+	}
+}
+
 func Test_redisKeyStore_Close(t *testing.T) {
 	type fields struct {
 		setFunc   func(ctx context.Context, key string, value any, expiration time.Duration) *redis.StatusCmd

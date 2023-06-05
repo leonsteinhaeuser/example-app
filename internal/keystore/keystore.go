@@ -8,6 +8,7 @@ import (
 type KeyStore interface {
 	Geter
 	Seter
+	Delete(ctx context.Context, key string) error
 }
 
 type Geter interface {
