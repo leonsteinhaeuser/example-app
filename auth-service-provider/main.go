@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/leonsteinhaeuser/example-app/auth-service-provider/user"
 	"github.com/zitadel/oidc/v2/example/server/exampleop"
 	"github.com/zitadel/oidc/v2/example/server/storage"
 )
@@ -14,6 +15,11 @@ func main() {
 	port := "9998"
 	//which gives us the issuer: http://localhost:9998/
 	issuer := fmt.Sprintf("http://localhost:%s/", port)
+
+	_ = user.Store{
+		// TODO: add your database connection here
+		DB: nil,
+	}
 
 	// the OpenIDProvider interface needs a Storage interface handling various checks and state manipulations
 	// this might be the layer for accessing your database
