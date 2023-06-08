@@ -21,14 +21,14 @@ type Server struct {
 	router chi.Router
 }
 
-func NewDefaultServer(logger log.Logger, listen string) *Server {
+func NewDefaultServer(logger log.Logger, listen string, contentTypes ...string) *Server {
 	rt := chi.NewRouter()
 	rt.Use(middleware.RequestID)
 	rt.Use(middleware.RealIP)
 	rt.Use(middleware.NoCache)
 	rt.Use(middleware.CleanPath)
 	rt.Use(log.LoggerMiddleware(logger))
-	rt.Use(middleware.AllowContentType("application/json"))
+	rt.Use(middleware.AllowContentType(append(contentTypes, "application/json")...))
 	rt.Use(middleware.Recoverer)
 	return &Server{
 		logger: logger,
