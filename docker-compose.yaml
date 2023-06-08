@@ -95,10 +95,24 @@ services:
       - thread
     ports:
       - "1112:1111"
+  thread_view:
+    build:
+      context: .
+      dockerfile: ./thread-view-service/Dockerfile
+    environment:
+      THREAD_SERVICE_ADDRESS: "http://thread_service:1111"
+      LISTEN_ADDR: ":1111"
+    depends_on:
+      - thread_service
+    networks:
+      - thread_view
+    ports:
+      - "1113:1111"
 
 networks:
   app:
   thread:
+  thread_view:
   nats:
 
 volumes:
