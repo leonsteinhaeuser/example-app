@@ -82,7 +82,6 @@ func (d *DefaultClient) doRequest(ctx context.Context, method string, id string,
 			Err:     err,
 		}
 	}
-	defer rsp.Body.Close()
 	return rsp, nil
 }
 
@@ -91,6 +90,7 @@ func (d *DefaultClient) Get(ctx context.Context, id string) (*thread.Thread, err
 	if err != nil {
 		return nil, err
 	}
+	defer rsp.Body.Close()
 	if rsp.StatusCode != http.StatusOK {
 		return nil, &ClientRequestError{
 			Message: "unexpected status code: " + rsp.Status,
@@ -112,6 +112,7 @@ func (d *DefaultClient) List(ctx context.Context) ([]*thread.Thread, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rsp.Body.Close()
 	if rsp.StatusCode != http.StatusOK {
 		return nil, &ClientRequestError{
 			Message: "unexpected status code: " + rsp.Status,
@@ -133,6 +134,7 @@ func (d *DefaultClient) Create(ctx context.Context, t *thread.Thread) error {
 	if err != nil {
 		return err
 	}
+	defer rsp.Body.Close()
 	if rsp.StatusCode != http.StatusCreated {
 		return &ClientRequestError{
 			Message: "unexpected status code: " + rsp.Status,
@@ -147,6 +149,7 @@ func (d *DefaultClient) Update(ctx context.Context, t *thread.Thread) error {
 	if err != nil {
 		return err
 	}
+	defer rsp.Body.Close()
 	if rsp.StatusCode != http.StatusOK {
 		return &ClientRequestError{
 			Message: "unexpected status code: " + rsp.Status,
@@ -161,6 +164,7 @@ func (d *DefaultClient) Delete(ctx context.Context, t *thread.Thread) error {
 	if err != nil {
 		return err
 	}
+	defer rsp.Body.Close()
 	if rsp.StatusCode != http.StatusNoContent {
 		return &ClientRequestError{
 			Message: "unexpected status code: " + rsp.Status,
