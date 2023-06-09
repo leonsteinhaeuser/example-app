@@ -4,6 +4,7 @@ import (
 	"github.com/leonsteinhaeuser/example-app/internal/env"
 	"github.com/leonsteinhaeuser/example-app/internal/log"
 	"github.com/leonsteinhaeuser/example-app/internal/server"
+	"github.com/leonsteinhaeuser/example-app/thread-service/client"
 	"github.com/leonsteinhaeuser/example-app/thread-view-service/api"
 	"github.com/rs/zerolog"
 )
@@ -22,10 +23,15 @@ var (
 func main() {
 	srvr := server.NewDefaultServer(logr, listenAddr, "application/x-www-form-urlencoded")
 
-	srvr.AddRouter(api.NewViewRouter(logr))
+	client, err := client.NewDefaultClient(threadServiceAddr)
+	if err != nil {
+		logr.Panic(err).Log("error creating thread service client")
+	}
+
+	srvr.AddRouter(api.NewViewRouter(logr, client))
 
 	defer srvr.Stop()
-	err := srvr.Start()
+	err = srvr.Start()
 	if err != nil {
 		logr.Panic(err).Log("error starting server")
 	}

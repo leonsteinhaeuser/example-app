@@ -5,7 +5,9 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/leonsteinhaeuser/example-app/internal/log"
+	"github.com/leonsteinhaeuser/example-app/public"
 	"github.com/leonsteinhaeuser/example-app/thread-service/thread"
 
 	_ "embed"
@@ -40,12 +42,14 @@ func init() {
 }
 
 type ViewRouter struct {
-	log log.Logger
+	threadClient public.Client[thread.Thread]
+	log          log.Logger
 }
 
-func NewViewRouter(log log.Logger) *ViewRouter {
+func NewViewRouter(log log.Logger, client public.Client[thread.Thread]) *ViewRouter {
 	return &ViewRouter{
-		log: log,
+		threadClient: client,
+		log:          log,
 	}
 }
 
@@ -65,11 +69,26 @@ func (v *ViewRouter) createForm(w http.ResponseWriter, r *http.Request) {
 }
 
 func (v *ViewRouter) createHandler(w http.ResponseWriter, r *http.Request) {
-	title := r.FormValue("title")
-	body := r.FormValue("body")
-	v.log.Info().Field("title", title).Field("body", body).Log("creating thread")
-
-	// TODO: send request to thread service
+	ctx := r.Context()
+	err := v.threadClient.Create(ctx, &thread.Thread{
+		Title:    r.FormValue("title"),
+		Body:     r.FormValue("body"),
+		AuthorID: uuid.New(),
+		KeywordIDs: []string{
+			uuid.New().String(),
+			uuid.New().String(),
+			uuid.New().String(),
+			uuid.New().String(),
+			uuid.New().String(),
+			uuid.New().String(),
+		},
+	})
+	if err != nil {
+		v.log.Error(err).Log("error creating thread")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusCreated)
 }
 
 func (v *ViewRouter) getByIdForm(w http.ResponseWriter, r *http.Request) {
@@ -77,11 +96,17 @@ func (v *ViewRouter) getByIdForm(w http.ResponseWriter, r *http.Request) {
 }
 
 func (v *ViewRouter) getByIdHandler(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
-	v.log.Info().Field("id", id).Log("getting thread by id")
-	// TODO: send request to thread service
-
-	err := templateGetByID.Execute(w, thread.Thread{})
+	ctx := r.Context()
+	id := r.FormValue("id")
+	// execute get call to thread service
+	thread, err := v.threadClient.Get(ctx, id)
+	if err != nil {
+		v.log.Error(err).Log("error getting thread")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	// render template
+	err = templateGetByID.Execute(w, thread)
 	if err != nil {
 		v.log.Error(err).Log("error executing template")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -90,9 +115,16 @@ func (v *ViewRouter) getByIdHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (v *ViewRouter) list(w http.ResponseWriter, r *http.Request) {
-	// TODO: get all threads from thread service
+	ctx := r.Context()
+	// execute list call to thread service
+	threads, err := v.threadClient.List(ctx)
+	if err != nil {
+		v.log.Error(err).Log("error listing threads")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	err := templateList.Execute(w, []thread.Thread{})
+	err = templateList.Execute(w, threads)
 	if err != nil {
 		v.log.Error(err).Log("error executing template")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
