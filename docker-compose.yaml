@@ -73,6 +73,7 @@ services:
     build:
       context: .
       dockerfile: ./thread-service/Dockerfile
+    hostname: thread-service
     environment:
       LISTEN_ADDR: ":1111"
       POSTGRES_HOST: *t_db
@@ -93,6 +94,7 @@ services:
       - nats-2
     networks:
       - thread
+      - thread_view
     ports:
       - "1112:1111"
   thread_view:
@@ -100,7 +102,7 @@ services:
       context: .
       dockerfile: ./thread-view-service/Dockerfile
     environment:
-      THREAD_SERVICE_ADDRESS: "http://thread_service:1111"
+      THREAD_SERVICE_ADDRESS: "http://thread-service:1111"
       LISTEN_ADDR: ":1111"
     depends_on:
       - thread_service
