@@ -38,6 +38,19 @@ func (t *ThreadRouter) Router(rt chi.Router) {
 	})
 }
 
+// getThread gets a thread by ID.
+//
+//	@Summary      Get thread by ID
+//	@Description  Get thread by ID
+//	@Tags         thread
+//	@Accept       json
+//	@Produce      json
+//	@Param        id    query     string  false  "find thread b ID"  Format(uuid)
+//	@Success      200  {object}   thread.Thread
+//	@Failure      400  {object}  utils.HTTPError
+//	@Failure      404  {object}  utils.HTTPError
+//	@Failure      500  {object}  utils.HTTPError
+//	@Router       /thread/{id} [get]
 func (t *ThreadRouter) getThread(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	id := chi.URLParam(r, "id")
@@ -56,6 +69,18 @@ func (t *ThreadRouter) getThread(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// listThreads lists all threads.
+//
+//	@Summary      List all threads
+//	@Description  List all threads
+//	@Tags         thread
+//	@Accept       json
+//	@Produce      json
+//	@Success      200  {array}   thread.Thread
+//	@Failure      400  {object}  utils.HTTPError
+//	@Failure      404  {object}  utils.HTTPError
+//	@Failure      500  {object}  utils.HTTPError
+//	@Router       /thread [get]
 func (t *ThreadRouter) listThreads(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -73,6 +98,18 @@ func (t *ThreadRouter) listThreads(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// createThread creates a thread.
+//
+//	@Summary      Create a thread
+//	@Description  Create a thread
+//	@Tags         thread
+//	@Accept       json
+//	@Produce      json
+//	@Success      200  {object}  thread.Thread
+//	@Failure      400  {object}  utils.HTTPError
+//	@Failure      404  {object}  utils.HTTPError
+//	@Failure      500  {object}  utils.HTTPError
+//	@Router       /thread [post]
 func (t *ThreadRouter) createThread(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -92,6 +129,18 @@ func (t *ThreadRouter) createThread(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
+// updateThread updates a thread.
+//
+//	@Summary      Update a thread
+//	@Description  Update a thread
+//	@Tags         thread
+//	@Accept       json
+//	@Produce      json
+//	@Success      200  {object}  thread.Thread
+//	@Failure      400  {object}  utils.HTTPError
+//	@Failure      404  {object}  utils.HTTPError
+//	@Failure      500  {object}  utils.HTTPError
+//	@Router       /thread/{id} [put]
 func (t *ThreadRouter) updateThread(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	tid := chi.URLParam(r, "id")
@@ -118,6 +167,18 @@ func (t *ThreadRouter) updateThread(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// deleteThread deletes a thread.
+//
+//	@Summary      Deleteh a thread
+//	@Description  Deleteh a thread
+//	@Tags         thread
+//	@Accept       json
+//	@Produce      json
+//	@Success      200  {object}  thread.Thread
+//	@Failure      400  {object}  utils.HTTPError
+//	@Failure      404  {object}  utils.HTTPError
+//	@Failure      500  {object}  utils.HTTPError
+//	@Router       /thread/{id} [delete]
 func (t *ThreadRouter) deleteThread(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	id := chi.URLParam(r, "id")
