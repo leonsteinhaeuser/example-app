@@ -1,12 +1,12 @@
 package v1
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/leonsteinhaeuser/example-app/internal/log"
 	"github.com/leonsteinhaeuser/example-app/internal/server"
+	"github.com/leonsteinhaeuser/example-app/internal/utils"
 	"github.com/leonsteinhaeuser/example-app/thread-service/thread"
 )
 
@@ -55,16 +55,17 @@ func (t *ThreadRouter) getThread(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	id := chi.URLParam(r, "id")
 
+	t.log.Info().Field("id", id).Log("get thread by ID")
 	th, err := t.ts.GetByID(ctx, id)
 	if err != nil {
-		t.log.Error(err).Log("failed to get thread")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		t.log.Error(err).Field("id", id).Log("failed to get thread")
+		utils.NewHTTPError(http.StatusInternalServerError, "failed find thread by id in database", err).Write(w)
 		return
 	}
-	err = json.NewEncoder(w).Encode(th)
+	err = utils.WriteJSON(w, http.StatusOK, th)
 	if err != nil {
-		t.log.Error(err).Log("failed to encode thread")
-		w.WriteHeader(http.StatusInternalServerError)
+		t.log.Error(err).Field("id", id).Log("failed to encode thread")
+		utils.NewHTTPError(http.StatusInternalServerError, "failed to encode thread", err).Write(w)
 		return
 	}
 }
@@ -90,9 +91,9 @@ func (t *ThreadRouter) listThreads(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err = json.NewEncoder(w).Encode(threads)
+	err = utils.WriteJSON(w, http.StatusOK, threads)
 	if err != nil {
-		t.log.Error(err).Log("failed to encode threads")
+		t.log.Error(err).Log("failed to encode thread")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -114,7 +115,7 @@ func (t *ThreadRouter) createThread(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	th := &thread.Thread{}
-	err := json.NewDecoder(r.Body).Decode(th)
+	err := utils.ReadJSON(r, th)
 	if err != nil {
 		t.log.Error(err).Log("failed to decode thread")
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -126,7 +127,12 @@ func (t *ThreadRouter) createThread(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusCreated)
+	err = utils.WriteJSON(w, http.StatusCreated, th)
+	if err != nil {
+		t.log.Error(err).Log("failed to encode thread")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 }
 
 // updateThread updates a thread.
@@ -146,23 +152,30 @@ func (t *ThreadRouter) updateThread(w http.ResponseWriter, r *http.Request) {
 	tid := chi.URLParam(r, "id")
 
 	th := &thread.Thread{}
-	err := json.NewDecoder(r.Body).Decode(th)
+	err := utils.ReadJSON(r, th)
 	if err != nil {
-		t.log.Error(err).Log("failed to decode thread")
+		t.log.Error(err).Field("id", tid).Log("failed to decode thread")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if th.ID.String() != tid {
-		t.log.Error(err).Log("thread id mismatch")
+		t.log.Error(err).Field("id", tid).Log("thread id mismatch")
 		http.Error(w, "thread id mismatch", http.StatusBadRequest)
 		return
 	}
 
 	err = t.ts.UpdateByID(ctx, th)
 	if err != nil {
-		t.log.Error(err).Log("failed to update thread")
+		t.log.Error(err).Field("id", tid).Log("failed to update thread")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = utils.WriteJSON(w, http.StatusOK, th)
+	if err != nil {
+		t.log.Error(err).Field("id", tid).Log("failed to encode thread")
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 }
@@ -184,23 +197,25 @@ func (t *ThreadRouter) deleteThread(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
 	thread := &thread.Thread{}
-	err := json.NewDecoder(r.Body).Decode(thread)
+	err := utils.ReadJSON(r, thread)
 	if err != nil {
-		t.log.Error(err).Log("failed to decode thread")
+		t.log.Error(err).Field("id", id).Log("failed to decode thread")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if thread.ID.String() != id {
-		t.log.Error(err).Log("thread id mismatch")
+		t.log.Error(err).Field("id", id).Log("thread id mismatch")
 		http.Error(w, "thread id mismatch", http.StatusBadRequest)
 		return
 	}
 
 	err = t.ts.DeleteByID(ctx, id)
 	if err != nil {
-		t.log.Error(err).Log("failed to delete thread")
+		t.log.Error(err).Field("id", id).Log("failed to delete thread")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
