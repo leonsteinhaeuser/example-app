@@ -74,13 +74,13 @@ func (v *ViewRouter) createHandler(w http.ResponseWriter, r *http.Request) {
 		Title:    r.FormValue("title"),
 		Body:     r.FormValue("body"),
 		AuthorID: uuid.New(),
-		KeywordIDs: []string{
-			uuid.New().String(),
-			uuid.New().String(),
-			uuid.New().String(),
-			uuid.New().String(),
-			uuid.New().String(),
-			uuid.New().String(),
+		KeywordIDs: []uuid.UUID{
+			uuid.New(),
+			uuid.New(),
+			uuid.New(),
+			uuid.New(),
+			uuid.New(),
+			uuid.New(),
 		},
 	})
 	if err != nil {
