@@ -20,7 +20,7 @@ var (
 	threadServiceAddr = env.GetStringEnvOrDefault("THREAD_SERVICE_ADDRESS", "http://localhost:8080")
 	listenAddr        = env.GetStringEnvOrDefault("LISTEN_ADDR", ":8080")
 	// externalURL
-	externalURL string = env.GetStringEnvOrDefault("EXTERNAL_URL", "http://localhost:1112")
+	externalURL string = env.GetStringEnvOrDefault("EXTERNAL_URL", "http://localhost:8080")
 
 	// logger settings
 	logLevel            = env.GetIntEnvOrDefault("LOG_LEVEL", 0)
