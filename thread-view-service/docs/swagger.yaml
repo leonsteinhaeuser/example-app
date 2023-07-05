@@ -1,0 +1,15 @@
+basePath: /
+host: thread-view-service
+info:
+  contact:
+    email: mail@example.localhost
+    name: API Support
+    url: http://github.com/leonsteinhaeuser/example-app
+  description: This is the thread-view-service.
+  license:
+    name: GNU GENERAL PUBLIC LICENSE 3.0
+    url: https://github.com/leonsteinhaeuser/example-app/blob/main/LICENSE
+  title: Thread View Service
+  version: "1.0"
+paths: {}
+swagger: "2.0"

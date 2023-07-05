@@ -1,0 +1,20 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "This is the thread-view-service.",
+        "title": "Thread View Service",
+        "contact": {
+            "name": "API Support",
+            "url": "http://github.com/leonsteinhaeuser/example-app",
+            "email": "mail@example.localhost"
+        },
+        "license": {
+            "name": "GNU GENERAL PUBLIC LICENSE 3.0",
+            "url": "https://github.com/leonsteinhaeuser/example-app/blob/main/LICENSE"
+        },
+        "version": "1.0"
+    },
+    "host": "thread-view-service",
+    "basePath": "/",
+    "paths": {}
+}

@@ -19,5 +19,107 @@ services:
     ports:
       - "2222:2222"
 
+  nats-0:
+    image: nats:2.9-alpine
+    container_name: &nt_m nats-0
+    environment:
+      NATS_USER: &nt_u nats
+      NATS_PASSWORD: &nt_p nats
+    # ports:
+    # - "4222:4222" # clients
+    # - "8222:8222" # HTTP management port for information reporting
+    # - "6222:6222" # routing port for clustering
+    command: --cluster_name NATS --cluster nats://0.0.0.0:6222 --http_port 8222 --user=$NATS_USER --pass=$NATS_PASSWORD
+    networks:
+      - nats
+      - thread
+  nats-1:
+    image: nats:2.9-alpine
+    container_name: nats-1
+    environment:
+      NATS_USER: *nt_u
+      NATS_PASSWORD: *nt_p
+      NATS_MASTER: *nt_m
+    command: --cluster_name NATS --cluster nats://0.0.0.0:6222 --routes=nats://$NATS_USER:$NATS_PASSWORD@$NATS_MASTER:6222
+    networks:
+      - nats
+      - thread
+    depends_on:
+    - "nats-0"
+  nats-2:
+    image: nats:2.9-alpine
+    container_name: nats-2
+    command: --cluster_name NATS --cluster nats://0.0.0.0:6222 --routes=nats://$NATS_USER:$NATS_PASSWORD@$NATS_MASTER:6222
+    networks:
+      - nats
+      - thread
+    depends_on:
+    - "nats-0"
+
+  thread_db:
+    image: postgres:15-alpine
+    hostname: &t_db thread_db
+    environment:
+      POSTGRES_USER: &t_db_u postgres
+      POSTGRES_PASSWORD: &t_db_p postgres
+      POSTGRES_DB: &t_db_d thread_db
+      PGDATA: /var/lib/postgresql/data/pgdata
+    networks:
+    - thread
+    volumes:
+    - thread_db:/var/lib/postgresql/data/pgdata
+
+  thread_service:
+    build:
+      context: .
+      dockerfile: ./thread-service/Dockerfile
+    hostname: thread-service
+    restart: always
+    environment:
+      EXTERNAL_URL: "http://thread-service:1112"
+      LISTEN_ADDR: ":1112"
+      POSTGRES_HOST: *t_db
+      POSTGRES_PORT: "5432"
+      POSTGRES_USERNAME: *t_db_u
+      POSTGRES_PASSWORD: *t_db_p
+      POSTGRES_DATABASE: *t_db_d
+      POSTGRES_OPTIONS: "sslmode=disable"
+      POSTGRES_MAX_OPEN_CONNS: "10"
+      POSTGRES_MAX_IDLE_CONNS: "5"
+      POSTGRES_MAX_IDLE_CONN_TIME_SEC: "10"
+      POSTGRES_MAX_CONN_LIFETIME_SEC: "10"
+      NATS_CLIENTS: "nats://nats-0:6222,nats://nats-1:6222,nats://nats-2:6222"
+    depends_on:
+      - thread_db
+      - nats-0
+      - nats-1
+      - nats-2
+    networks:
+      - thread
+      - thread_view
+    ports:
+      - "1112:1112"
+  thread_view:
+    hostname: thread-view-service
+    build:
+      context: .
+      dockerfile: ./thread-view-service/Dockerfile
+    environment:
+      THREAD_SERVICE_ADDRESS: "http://thread-service:1112"
+      EXTERNAL_URL: "http://thread-service:1111"
+      LISTEN_ADDR: ":1111"
+    depends_on:
+      - thread_service
+    networks:
+      - thread_view
+    ports:
+      - "1113:1111"
+
 networks:
   app:
+  thread:
+  thread_view:
+  nats:
+
+volumes:
+  thread_db:

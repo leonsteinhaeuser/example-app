@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -21,14 +22,14 @@ type Server struct {
 	router chi.Router
 }
 
-func NewDefaultServer(logger log.Logger, listen string) *Server {
+func NewDefaultServer(logger log.Logger, listen string, contentTypes ...string) *Server {
 	rt := chi.NewRouter()
 	rt.Use(middleware.RequestID)
 	rt.Use(middleware.RealIP)
 	rt.Use(middleware.NoCache)
 	rt.Use(middleware.CleanPath)
 	rt.Use(log.LoggerMiddleware(logger))
-	rt.Use(middleware.AllowContentType("application/json"))
+	rt.Use(middleware.AllowContentType(append(contentTypes, "application/json")...))
 	rt.Use(middleware.Recoverer)
 	return &Server{
 		logger: logger,
@@ -57,6 +58,14 @@ func (s *Server) AddRouter(r Router) {
 
 // Start starts the server
 func (s *Server) Start() error {
+	err := chi.Walk(s.router, func(method, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
+		s.logger.Info().Field("method", method).Field("route", route).Log("route added")
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("failed to walk routes: %w", err)
+	}
+	s.logger.Info().Field("listen", s.server.Addr).Log("Starting server...")
 	return s.server.ListenAndServe()
 }
 

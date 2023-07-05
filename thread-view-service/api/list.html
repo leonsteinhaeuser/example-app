@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/main.css">
+</head>
+
+<body>
+    <h1>Article List</h1>
+    <div class="row">
+        {{ range $article := . }}
+        <div class="column">
+            <div class="card">
+                Title:
+                <h3><b>{{ .Title }}</b></h3>
+                ID:
+                <p>{{ .ID }}</p>
+                Body:
+                <p>{{ .Body }}</p>
+                Author ID:
+                <p>{{ .AuthorID }}</p>
+                Keyword IDs:
+                <ul>
+                    {{ range .KeywordIDs }}
+                    <li>{{ . }}</li>
+                    {{ end }}
+                </ul>
+            </div>
+        </div>
+        {{ end }}
+    </div>
+</body>
+</html>
