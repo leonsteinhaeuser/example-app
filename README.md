@@ -16,7 +16,7 @@ In order to generate the API documentation, create a **package.go** in the servi
 package main
 
 // generate swagger docs
-//go:generate swag init --dir ./,../internal --output ./docs --parseInternal --generatedTime
+//go:generate swag init --dir ./.../internal --output ./docs --parseInternal --generatedTime
 ```
 
 Explanation:
