@@ -10,6 +10,8 @@ require (
 	github.com/nats-io/nats.go v1.26.0
 	github.com/redis/go-redis/v9 v9.0.4
 	github.com/rs/zerolog v1.29.1
+	github.com/swaggo/http-swagger/v2 v2.0.1
+	github.com/swaggo/swag v1.16.1
 	gorm.io/driver/postgres v1.5.2
 	gorm.io/gorm v1.25.1
 )

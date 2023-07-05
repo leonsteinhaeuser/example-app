@@ -1,0 +1,15 @@
+basePath: /
+host: number-service
+info:
+  contact:
+    email: mail@example.localhost
+    name: API Support
+    url: http://github.com/leonsteinhaeuser/example-app
+  description: This is the number-service.
+  license:
+    name: GNU GENERAL PUBLIC LICENSE 3.0
+    url: https://github.com/leonsteinhaeuser/example-app/blob/main/LICENSE
+  title: Number Service API
+  version: "1.0"
+paths: {}
+swagger: "2.0"
