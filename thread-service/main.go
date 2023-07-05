@@ -18,8 +18,6 @@ import (
 	"github.com/rs/zerolog"
 
 	httpSwagger "github.com/swaggo/http-swagger/v2"
-
-	_ "github.com/leonsteinhaeuser/example-app/thread-service/docs"
 )
 
 const (
