@@ -14,10 +14,11 @@ services:
       dockerfile: ./view-service/Dockerfile
     environment:
       NUMBER_SERVICE_ADDRESS: "http://number-service:1111"
+      LISTEN_ADDRESS: ":1112"
     networks:
       - app
     ports:
-      - "2222:2222"
+      - "1112:1112"
 
 networks:
   app:
