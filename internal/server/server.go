@@ -57,6 +57,11 @@ func (s *Server) AddRouter(r Router) {
 
 // Start starts the server
 func (s *Server) Start() error {
+	chi.Walk(s.router, func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
+		s.logger.Trace().Field("method", method).Field("route", route).Log("Adding route")
+		return nil
+	})
+	s.logger.Info().Field("listen", s.server.Addr).Log("Starting server")
 	return s.server.ListenAndServe()
 }
 
