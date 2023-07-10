@@ -1,14 +1,12 @@
 package main
 
 import (
-	"encoding/json"
-	"math/rand"
 	"net/http"
 
-	"github.com/leonsteinhaeuser/example-app/internal"
 	"github.com/leonsteinhaeuser/example-app/internal/env"
 	"github.com/leonsteinhaeuser/example-app/internal/log"
 	"github.com/leonsteinhaeuser/example-app/internal/server"
+	v1 "github.com/leonsteinhaeuser/example-app/number-service/api/v1"
 )
 
 var (
@@ -19,11 +17,7 @@ var (
 )
 
 func main() {
-	httpRouter.AddEndpoint("GET", "/", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(internal.NumberResponse{
-			Number: rand.Int63(),
-		})
-	})
+	httpServer.AddRouter(v1.NewNumberRouter(logr))
 	httpRouter.AddEndpoint("GET", "/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok"))

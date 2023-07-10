@@ -6,10 +6,10 @@ import (
 	"html/template"
 	"net/http"
 
-	"github.com/leonsteinhaeuser/example-app/internal"
 	"github.com/leonsteinhaeuser/example-app/internal/env"
 	"github.com/leonsteinhaeuser/example-app/internal/log"
 	"github.com/leonsteinhaeuser/example-app/internal/server"
+	v1 "github.com/leonsteinhaeuser/example-app/number-service/api/v1"
 )
 
 var (
@@ -82,7 +82,7 @@ func getNumberFromNumberService(ctx context.Context) (int64, error) {
 		return 0, err
 	}
 	// parse response
-	data := internal.NumberResponse{}
+	data := v1.NumberResponse{}
 	err = json.NewDecoder(resp.Body).Decode(&data)
 	if err != nil {
 		return 0, err
