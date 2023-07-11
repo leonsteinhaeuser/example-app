@@ -33,6 +33,16 @@ entries:
     version: 1.0.0
   view-service:
   - apiVersion: v2
+    appVersion: v1.1.0
+    created: "2023-07-11T11:28:23.763816877Z"
+    description: A Helm chart for Kubernetes
+    digest: b22cfdeecae2616015aaf082de2a8cac48b82d281c92716f53a5325394579e50
+    name: view-service
+    type: application
+    urls:
+    - https://github.com/leonsteinhaeuser/example-app/releases/download/view-service-1.1.0/view-service-1.1.0.tgz
+    version: 1.1.0
+  - apiVersion: v2
     appVersion: v1.0.0
     created: "2023-04-22T22:30:38.087503641Z"
     description: A Helm chart for Kubernetes
@@ -52,4 +62,4 @@ entries:
     urls:
     - https://github.com/leonsteinhaeuser/example-app/releases/download/view-service-1.0.0/view-service-1.0.0.tgz
     version: 1.0.0
-generated: "2023-04-22T22:30:38.087536241Z"
+generated: "2023-07-11T11:28:23.763830877Z"
