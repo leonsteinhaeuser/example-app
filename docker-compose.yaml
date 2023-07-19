@@ -2,6 +2,7 @@ version: "3"
 
 services:
   number-service:
+    hostname: number-service
     build:
       context: .
       dockerfile: ./number-service/Dockerfile
@@ -9,6 +10,7 @@ services:
       - app
 
   view-service:
+    hostname: view-service
     build:
       context: .
       dockerfile: ./view-service/Dockerfile
