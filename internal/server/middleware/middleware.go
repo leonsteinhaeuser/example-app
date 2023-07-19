@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"net/http"
+	"os"
 
 	"github.com/google/uuid"
 	"github.com/leonsteinhaeuser/example-app/internal/log"
@@ -30,10 +31,16 @@ func LoggerMiddleware(log log.Logger) func(http.Handler) http.Handler {
 func RequestID() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			req := r.Context().Value(RequestIDKey)
-			reqID := uuid.NewString()
-			if req != nil {
-				reqID = req.(string)
+			// get request ID from header if present
+			// otherwise generate a new one
+			reqID := RequestIDFromHeader(r)
+			if reqID == "" {
+				host, err := os.Hostname()
+				if err != nil {
+					reqID = uuid.NewString()
+				} else {
+					reqID = host + "/" + uuid.NewString()
+				}
 			}
 			ctx := context.WithValue(r.Context(), RequestIDKey, reqID)
 			next.ServeHTTP(w, r.WithContext(ctx))
@@ -44,4 +51,9 @@ func RequestID() func(http.Handler) http.Handler {
 // RequestIDFromContext returns the request ID from the context.
 func RequestIDFromContext(ctx context.Context) string {
 	return ctx.Value(RequestIDKey).(string)
+}
+
+// RequestIDFromHeader returns the request ID from the header.
+func RequestIDFromHeader(r *http.Request) string {
+	return r.Header.Get(HeaderRequestID)
 }
