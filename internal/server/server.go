@@ -24,6 +24,7 @@ type Server struct {
 
 func NewDefaultServer(logger log.Logger, listen string) *Server {
 	rt := chi.NewRouter()
+	rt.Use(customMiddleware.OpenTelemetryMiddleware)
 	rt.Use(customMiddleware.RequestID())
 	rt.Use(middleware.RealIP)
 	rt.Use(middleware.NoCache)
