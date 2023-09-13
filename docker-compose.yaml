@@ -20,5 +20,42 @@ services:
     ports:
       - "1112:1112"
 
+  # article services
+  article-db:
+    hostname: &article_db_host article-db
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: &article_db_user article_service
+      POSTGRES_PASSWORD: &article_db_password article_service
+      POSTGRES_DB: &article_db_name article_service
+      PGDATA: /var/lib/postgresql/data/pgdata
+    networks:
+      - article-backend
+    volumes:
+      - article_db:/var/lib/postgresql/data/pgdata
+
+  article-backend:
+    build:
+      context: .
+      dockerfile: ./article-backend/Dockerfile
+    depends_on:
+      - article-db
+    environment:
+      LISTEN_ADDRESS: ":1200"
+      POSTGRES_HOST: *article_db_host
+      POSTGRES_PORT: "5432"
+      POSTGRES_USERNAME: *article_db_user
+      POSTGRES_PASSWORD: *article_db_password
+      POSTGRES_DATABASE: *article_db_name
+    networks:
+      - article-backend
+    ports:
+      - "1200:1200"
+
 networks:
   app:
+  article-backend:
+
+volumes:
+  article_db:
