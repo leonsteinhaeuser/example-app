@@ -4,13 +4,14 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type Article struct {
-	ID        uuid.UUID  `json:"id,omitempty" gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	CreatedAt time.Time  `json:"created_at,omitempty"`
-	UpdatedAt time.Time  `json:"updated_at,omitempty"`
-	DeletedAt *time.Time `json:"deleted_at,omitempty"`
+	ID        uuid.UUID      `json:"id,omitempty" gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	CreatedAt time.Time      `json:"created_at,omitempty"`
+	UpdatedAt time.Time      `json:"updated_at,omitempty"`
+	DeletedAt gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
 
 	// Title is the title of the article.
 	Title string `json:"title,omitempty"`

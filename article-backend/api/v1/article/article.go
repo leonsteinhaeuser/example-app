@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/leonsteinhaeuser/example-app/internal/db"
 	"github.com/leonsteinhaeuser/example-app/internal/log"
 	"github.com/leonsteinhaeuser/example-app/internal/server"
@@ -172,7 +173,9 @@ func (t *articleRouter) deleteArticle(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	id := chi.URLParam(r, "id")
 
-	err := t.db.Delete(&Article{}).Where("id = ?", id).Commit(ctx)
+	t.log.Debug().Field("id", id).Log("delete article")
+
+	err := t.db.Delete(&Article{ID: uuid.MustParse(id)}).Where("id = ?", id).Commit(ctx)
 	if err != nil {
 		t.log.Error(err).Log("failed to delete article")
 		utils.WriteJSON(w, http.StatusInternalServerError, server.Error{
