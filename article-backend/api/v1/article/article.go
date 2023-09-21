@@ -3,6 +3,7 @@ package article
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -50,6 +51,12 @@ func (t *articleRouter) createArticle(w http.ResponseWriter, r *http.Request) {
 			Error:   err.Error(),
 		})
 		return
+	}
+
+	// set published_at to time.Now if article "published" is set true
+	if article.Published && article.PublishedAt == nil {
+		now := time.Now()
+		article.PublishedAt = &now
 	}
 
 	err = t.db.Create(ctx, article)
