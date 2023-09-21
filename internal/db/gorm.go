@@ -3,11 +3,14 @@ package db
 import (
 	"context"
 	"fmt"
+	"log"
+	"os"
 	"time"
 
 	"github.com/leonsteinhaeuser/example-app/internal/env"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 // PosgresConfigFromEnv returns a PostgresConfig struct with values from the environment.
@@ -71,7 +74,18 @@ func (p *PostgresConfig) dsn() string {
 
 // NewGormRepository opens a connection to the database using the GORM library.
 func NewGormRepository(conf PostgresConfig) (Repository, error) {
-	gormDB, err := gorm.Open(postgres.Open(conf.dsn()), &gorm.Config{})
+	gormDB, err := gorm.Open(postgres.Open(conf.dsn()), &gorm.Config{
+		Logger: logger.New(
+			log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
+			logger.Config{
+				SlowThreshold:             time.Second, // Slow SQL threshold
+				LogLevel:                  logger.Info, // Log level
+				IgnoreRecordNotFoundError: true,        // Ignore ErrRecordNotFound error for logger
+				ParameterizedQueries:      true,        // Don't include params in the SQL log
+				Colorful:                  false,       // Disable color
+			},
+		),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -101,19 +115,25 @@ func (p *gormRepository) Create(ctx context.Context, data any) error {
 
 func (p *gormRepository) Find(data any) TX {
 	return &gormTX{
-		tx: p.DB.Model(data).Find(data),
+		tx:         p.DB.Model(data),
+		receiver:   data,
+		gormAction: gormActionFind,
 	}
 }
 
 func (p *gormRepository) Update(data any) TX {
 	return &gormTX{
-		tx: p.DB.Model(data).Updates(data),
+		tx:         p.DB.Model(data),
+		receiver:   data,
+		gormAction: gormActionUpdate,
 	}
 }
 
 func (p *gormRepository) Delete(data any) TX {
 	return &gormTX{
-		tx: p.DB.Model(data).Delete(data),
+		tx:         p.DB.Model(data),
+		receiver:   data,
+		gormAction: gormActionDelete,
 	}
 }
 

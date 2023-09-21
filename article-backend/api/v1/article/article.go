@@ -3,8 +3,10 @@ package article
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/leonsteinhaeuser/example-app/internal/db"
 	"github.com/leonsteinhaeuser/example-app/internal/log"
 	"github.com/leonsteinhaeuser/example-app/internal/server"
@@ -30,6 +32,7 @@ func (t *articleRouter) Router(rt chi.Router) {
 			rt.Get("/", t.getArticle)
 			rt.Put("/", t.updateArticle)
 			rt.Delete("/", t.deleteArticle)
+			rt.Post("/publish", t.publishArticle)
 		})
 		rt.Get("/", t.getArticles)
 		rt.Post("/", t.createArticle)
@@ -49,6 +52,12 @@ func (t *articleRouter) createArticle(w http.ResponseWriter, r *http.Request) {
 			Error:   err.Error(),
 		})
 		return
+	}
+
+	// set published_at to time.Now if article "published" is set true
+	if article.Published && article.PublishedAt == nil {
+		now := time.Now()
+		article.PublishedAt = &now
 	}
 
 	err = t.db.Create(ctx, article)
@@ -168,11 +177,38 @@ func (t *articleRouter) updateArticle(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusNoContent, map[string]any{})
 }
 
+func (t *articleRouter) publishArticle(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	id := chi.URLParam(r, "id")
+
+	now := time.Now()
+	article := &Article{
+		ID:          uuid.MustParse(id),
+		Published:   true,
+		PublishedAt: &now,
+	}
+
+	err := t.db.Update(article).Where("id = ?", id).Where("published_at = ?", nil).Commit(ctx)
+	if err != nil {
+		t.log.Error(err).Log("failed to update article")
+		utils.WriteJSON(w, http.StatusInternalServerError, server.Error{
+			Status:  http.StatusInternalServerError,
+			Message: "failed to update article",
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusNoContent, map[string]any{})
+}
+
 func (t *articleRouter) deleteArticle(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	id := chi.URLParam(r, "id")
 
-	err := t.db.Delete(&Article{}).Where("id = ?", id).Commit(ctx)
+	t.log.Debug().Field("id", id).Log("delete article")
+
+	err := t.db.Delete(&Article{ID: uuid.MustParse(id)}).Where("id = ?", id).Commit(ctx)
 	if err != nil {
 		t.log.Error(err).Log("failed to delete article")
 		utils.WriteJSON(w, http.StatusInternalServerError, server.Error{

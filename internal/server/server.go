@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	"github.com/leonsteinhaeuser/example-app/internal/log"
 	customMiddleware "github.com/leonsteinhaeuser/example-app/internal/server/middleware"
 )
@@ -32,6 +33,15 @@ func NewDefaultServer(logger log.Logger, listen string) *Server {
 	rt.Use(customMiddleware.LoggerMiddleware(logger))
 	rt.Use(middleware.AllowContentType("application/json"))
 	rt.Use(middleware.Recoverer)
+	rt.Use(cors.Handler(cors.Options{
+		// AllowedOrigins:   []string{"https://foo.com"}, // Use this to allow specific origin hosts
+		AllowedOrigins: []string{"https://*", "http://*"},
+		// AllowOriginFunc:  func(r *http.Request, origin string) bool { return true },
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		AllowCredentials: false,
+		MaxAge:           300, // Maximum value not ignored by any of major browsers
+	}))
 	return &Server{
 		logger: logger,
 		server: http.Server{

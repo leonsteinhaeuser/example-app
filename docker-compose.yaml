@@ -39,6 +39,7 @@ services:
     build:
       context: .
       dockerfile: ./article-backend/Dockerfile
+    hostname: article-backend
     depends_on:
       - article-db
     environment:
@@ -52,6 +53,19 @@ services:
       - article-backend
     ports:
       - "1200:1200"
+
+  article-frontend:
+    build:
+      context: ./article-frontend
+      dockerfile: Dockerfile
+      args:
+        - ARTICLES_BACKEND_URL="http://article-backend:1200"
+    depends_on:
+      - article-backend
+    networks:
+      - article-backend
+    ports:
+      - "1201:80"
 
 networks:
   app:
