@@ -20,7 +20,7 @@ type Article struct {
 	// Content is the content of the article.
 	Content string `json:"content,omitempty"`
 	// Published is a flag indicating whether the article is published or not.
-	Published bool `json:"published"`
+	Published bool `json:"published,omitempty"`
 	// PublishedAt is the time the article was published.
 	PublishedAt *time.Time `json:"published_at,omitempty"`
 	// PublishedBy is the ID of the user who published the article.
