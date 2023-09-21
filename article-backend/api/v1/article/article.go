@@ -32,6 +32,7 @@ func (t *articleRouter) Router(rt chi.Router) {
 			rt.Get("/", t.getArticle)
 			rt.Put("/", t.updateArticle)
 			rt.Delete("/", t.deleteArticle)
+			rt.Post("/publish", t.publishArticle)
 		})
 		rt.Get("/", t.getArticles)
 		rt.Post("/", t.createArticle)
@@ -163,6 +164,31 @@ func (t *articleRouter) updateArticle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = t.db.Update(article).Where("id = ?", id).Commit(ctx)
+	if err != nil {
+		t.log.Error(err).Log("failed to update article")
+		utils.WriteJSON(w, http.StatusInternalServerError, server.Error{
+			Status:  http.StatusInternalServerError,
+			Message: "failed to update article",
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusNoContent, map[string]any{})
+}
+
+func (t *articleRouter) publishArticle(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	id := chi.URLParam(r, "id")
+
+	now := time.Now()
+	article := &Article{
+		ID:          uuid.MustParse(id),
+		Published:   true,
+		PublishedAt: &now,
+	}
+
+	err := t.db.Update(article).Where("id = ?", id).Where("published_at = ?", nil).Commit(ctx)
 	if err != nil {
 		t.log.Error(err).Log("failed to update article")
 		utils.WriteJSON(w, http.StatusInternalServerError, server.Error{
