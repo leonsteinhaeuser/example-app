@@ -10,8 +10,18 @@ var (
 	_ TX = (*gormTX)(nil)
 )
 
+type gormAction int
+
+const (
+	gormActionFind gormAction = iota
+	gormActionUpdate
+	gormActionDelete
+)
+
 type gormTX struct {
-	tx *gorm.DB
+	tx         *gorm.DB
+	receiver   any
+	gormAction gormAction
 }
 
 func (g *gormTX) Where(field string, value any) TX {
@@ -35,5 +45,13 @@ func (g *gormTX) Limit(limit int) TX {
 }
 
 func (g *gormTX) Commit(ctx context.Context) error {
-	return g.tx.Error
+	switch g.gormAction {
+	case gormActionFind:
+		return g.tx.Find(g.receiver).Error
+	case gormActionUpdate:
+		return g.tx.Updates(g.receiver).Error
+	case gormActionDelete:
+		return g.tx.Delete(g.receiver).Error
+	}
+	return nil
 }
